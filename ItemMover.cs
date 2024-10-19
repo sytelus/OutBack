@@ -50,15 +50,15 @@ namespace OutBack
                     {
                         try
                         {
-                            // Ensure item is fully downloaded
-                            if (item is Outlook._MailItem mailItem)
-                            {
-                                if ((mailItem.Conflicts != null && mailItem.Conflicts.Count > 0) || mailItem.IsMarkedAsTask)
-                                {
-                                    // Skip problematic items
-                                    continue;
-                                }
-                            }
+                            //// Ensure item is fully downloaded
+                            //if (item is Outlook._MailItem mailItem)
+                            //{
+                            //    if ((mailItem.Conflicts != null && mailItem.Conflicts.Count > 0) || mailItem.IsMarkedAsTask)
+                            //    {
+                            //        // Skip problematic items
+                            //        continue;
+                            //    }
+                            //}
 
                             if (isMoveOperation)
                             {

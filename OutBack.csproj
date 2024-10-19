@@ -219,6 +219,9 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <EmbeddedResource Include="PSTSelectionForm.resx">
+      <DependentUpon>PSTSelectionForm.cs</DependentUpon>
+    </EmbeddedResource>
     <None Include="OutBack_TemporaryKey.pfx" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
