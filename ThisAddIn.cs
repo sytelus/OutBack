@@ -1,20 +1,10 @@
-﻿using Microsoft.Office.Tools.Ribbon;
-
-namespace OutBack
+﻿namespace OutBack
 {
     public partial class ThisAddIn
     {
-        private MyRibbon ribbon;
-
         private void ThisAddIn_Startup(object sender, System.EventArgs e)
         {
             // Initialization code if needed
-        }
-
-        protected override Microsoft.Office.Core.IRibbonExtensibility CreateRibbonExtensibilityObject()
-        {
-            ribbon = new MyRibbon();
-            return Globals.Factory.GetRibbonFactory().CreateRibbonManager(new IRibbonExtension[] { ribbon });
         }
 
         private void ThisAddIn_Shutdown(object sender, System.EventArgs e)
@@ -22,9 +12,10 @@ namespace OutBack
             // Cleanup code if needed
         }
 
+        // No need to override CreateRibbonExtensibilityObject when using the designer
+
         #region VSTO generated code
 
-        // This method is required by the designer.
         private void InternalStartup()
         {
             this.Startup += new System.EventHandler(ThisAddIn_Startup);
@@ -34,4 +25,3 @@ namespace OutBack
         #endregion
     }
 }
-

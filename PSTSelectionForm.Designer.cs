@@ -2,7 +2,6 @@ namespace OutBack
 {
     partial class PSTSelectionForm
     {
-        private System.ComponentModel.IContainer components = null;
         private System.Windows.Forms.Label lblPstFile;
         private System.Windows.Forms.TextBox txtPstFilePath;
         private System.Windows.Forms.Button btnBrowse;

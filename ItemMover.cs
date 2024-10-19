@@ -28,7 +28,7 @@ namespace OutBack
                 if (pstStore == null)
                 {
                     Globals.ThisAddIn.Application.Session.AddStore(pstFilePath);
-                    pstStore = Globals.ThisAddIn.Application.Session.Stores.GetLast();
+                    pstStore = Globals.ThisAddIn.Application.Session.Stores[Globals.ThisAddIn.Application.Session.Stores.Count];
                 }
 
                 // Get or create the destination folder
@@ -53,7 +53,7 @@ namespace OutBack
                             // Ensure item is fully downloaded
                             if (item is Outlook._MailItem mailItem)
                             {
-                                if (mailItem.IsConflict || mailItem.IsResend || mailItem.IsMarkedAsTask)
+                                if ((mailItem.Conflicts != null && mailItem.Conflicts.Count > 0) || mailItem.IsMarkedAsTask)
                                 {
                                     // Skip problematic items
                                     continue;
