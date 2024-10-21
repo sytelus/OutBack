@@ -17,6 +17,8 @@ namespace OutBack
             this.chkMoveItems = new System.Windows.Forms.CheckBox();
             this.btnOK = new System.Windows.Forms.Button();
             this.btnCancel = new System.Windows.Forms.Button();
+            this.label1 = new System.Windows.Forms.Label();
+            this.labelSourceFolder = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
             // lblPstFile
@@ -30,14 +32,14 @@ namespace OutBack
             // 
             // txtPstFilePath
             // 
-            this.txtPstFilePath.Location = new System.Drawing.Point(68, 12);
+            this.txtPstFilePath.Location = new System.Drawing.Point(100, 12);
             this.txtPstFilePath.Name = "txtPstFilePath";
             this.txtPstFilePath.Size = new System.Drawing.Size(250, 29);
             this.txtPstFilePath.TabIndex = 1;
             // 
             // btnBrowse
             // 
-            this.btnBrowse.Location = new System.Drawing.Point(324, 10);
+            this.btnBrowse.Location = new System.Drawing.Point(410, 12);
             this.btnBrowse.Name = "btnBrowse";
             this.btnBrowse.Size = new System.Drawing.Size(98, 38);
             this.btnBrowse.TabIndex = 2;
@@ -57,7 +59,7 @@ namespace OutBack
             // 
             // btnOK
             // 
-            this.btnOK.Location = new System.Drawing.Point(243, 82);
+            this.btnOK.Location = new System.Drawing.Point(306, 135);
             this.btnOK.Name = "btnOK";
             this.btnOK.Size = new System.Drawing.Size(98, 39);
             this.btnOK.TabIndex = 4;
@@ -67,16 +69,37 @@ namespace OutBack
             // 
             // btnCancel
             // 
-            this.btnCancel.Location = new System.Drawing.Point(347, 82);
+            this.btnCancel.Location = new System.Drawing.Point(410, 135);
             this.btnCancel.Name = "btnCancel";
             this.btnCancel.Size = new System.Drawing.Size(100, 39);
             this.btnCancel.TabIndex = 5;
             this.btnCancel.Text = "Cancel";
             this.btnCancel.UseVisualStyleBackColor = true;
+            this.btnCancel.Click += new System.EventHandler(this.btnCancel_Click);
+            // 
+            // label1
+            // 
+            this.label1.AutoSize = true;
+            this.label1.Location = new System.Drawing.Point(23, 102);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(73, 25);
+            this.label1.TabIndex = 6;
+            this.label1.Text = "Folder:";
+            // 
+            // labelSourceFolder
+            // 
+            this.labelSourceFolder.AutoSize = true;
+            this.labelSourceFolder.Location = new System.Drawing.Point(102, 102);
+            this.labelSourceFolder.Name = "labelSourceFolder";
+            this.labelSourceFolder.Size = new System.Drawing.Size(64, 25);
+            this.labelSourceFolder.TabIndex = 7;
+            this.labelSourceFolder.Text = "label2";
             // 
             // PSTSelectionForm
             // 
             this.ClientSize = new System.Drawing.Size(522, 186);
+            this.Controls.Add(this.labelSourceFolder);
+            this.Controls.Add(this.label1);
             this.Controls.Add(this.btnCancel);
             this.Controls.Add(this.btnOK);
             this.Controls.Add(this.chkMoveItems);
@@ -85,9 +108,13 @@ namespace OutBack
             this.Controls.Add(this.lblPstFile);
             this.Name = "PSTSelectionForm";
             this.Text = "Select PST File";
+            this.Load += new System.EventHandler(this.PSTSelectionForm_Load);
             this.ResumeLayout(false);
             this.PerformLayout();
 
         }
+
+        private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.Label labelSourceFolder;
     }
 }

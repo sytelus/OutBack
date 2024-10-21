@@ -6,6 +6,7 @@ namespace OutBack
     public partial class PSTSelectionForm : Form
     {
         public string PstFilePath { get; private set; }
+
         public bool IsMoveOperation { get; private set; }
 
         public PSTSelectionForm()
@@ -38,6 +39,17 @@ namespace OutBack
 
             this.DialogResult = DialogResult.OK;
             this.Close();
+        }
+
+        private void btnCancel_Click(object sender, EventArgs e)
+        {
+            this.DialogResult = DialogResult.Cancel;
+            this.Close();
+        }
+
+        private void PSTSelectionForm_Load(object sender, EventArgs e)
+        {
+            labelSourceFolder.Text = Globals.ThisAddIn.Application.ActiveExplorer().CurrentFolder.FolderPath;
         }
     }
 }

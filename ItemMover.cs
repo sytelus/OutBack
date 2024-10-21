@@ -27,8 +27,7 @@ namespace OutBack
 
                 if (pstStore == null)
                 {
-                    Globals.ThisAddIn.Application.Session.AddStore(pstFilePath);
-                    pstStore = Globals.ThisAddIn.Application.Session.Stores[Globals.ThisAddIn.Application.Session.Stores.Count];
+                    throw new Exception("PST file not found");
                 }
 
                 // Get or create the destination folder

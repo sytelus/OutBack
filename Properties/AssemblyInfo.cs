@@ -9,9 +9,9 @@ using System.Security;
 [assembly: AssemblyTitle("OutBack")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Microsoft Corp.")]
+[assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("OutBack")]
-[assembly: AssemblyCopyright("Copyright © Microsoft Corp. 2024")]
+[assembly: AssemblyCopyright("Copyright © Shital Shah 2024")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

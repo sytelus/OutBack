@@ -45,7 +45,7 @@
             // 
             this.tab1.ControlId.ControlIdType = Microsoft.Office.Tools.Ribbon.RibbonControlIdType.Office;
             this.tab1.Groups.Add(this.group1);
-            this.tab1.Label = "TabAddIns";
+            this.tab1.Label = "OutBack";
             this.tab1.Name = "tab1";
             // 
             // group1
@@ -56,14 +56,14 @@
             // 
             // btnMoveCopy
             // 
-            this.btnMoveCopy.Label = "Moce/Copy";
+            this.btnMoveCopy.Label = "Move/Copy";
             this.btnMoveCopy.Name = "btnMoveCopy";
             this.btnMoveCopy.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.btnMoveCopy_Click);
             // 
             // MyRibbon
             // 
             this.Name = "MyRibbon";
-            this.RibbonType = "Microsoft.Outlook.Mail.Read";
+            this.RibbonType = "Microsoft.Outlook.Explorer";
             this.Tabs.Add(this.tab1);
             this.Load += new Microsoft.Office.Tools.Ribbon.RibbonUIEventHandler(this.MyRibbon_Load);
             this.tab1.ResumeLayout(false);
