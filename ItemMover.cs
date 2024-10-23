@@ -37,16 +37,20 @@ namespace OutBack
                 Outlook.Items items = sourceFolder.Items;
                 int totalItems = items.Count;
                 int processedItems = 0;
+                int errorItems = 0;
 
                 ProgressForm progressForm = new ProgressForm();
                 progressForm.Show();
 
                 Stopwatch stopwatch = Stopwatch.StartNew();
+                bool isCancelled = false;
+                string lastError = "";
 
                 await Task.Run(() =>
                 {
                     foreach (Outlook.MailItem item in items)
                     {
+                        if (isCancelled) break;
                         try
                         {
                             //// Ensure item is fully downloaded
@@ -68,9 +72,11 @@ namespace OutBack
                                 item.Copy().Move(destFolder);
                             }
                         }
-                        catch
+                        catch(Exception ex)
                         {
+                            lastError = ex.Message;
                             // Ignore items that cannot be copied or moved
+                            errorItems++;
                             continue;
                         }
                         finally
@@ -78,7 +84,7 @@ namespace OutBack
                             processedItems++;
                             progressForm.Invoke(new Action(() =>
                             {
-                                progressForm.UpdateProgress(processedItems, totalItems, stopwatch.Elapsed);
+                                isCancelled = progressForm.UpdateProgress(processedItems, totalItems, errorItems, lastError, stopwatch.Elapsed);
                             }));
                         }
                     }
@@ -86,7 +92,7 @@ namespace OutBack
 
                 stopwatch.Stop();
                 progressForm.Close();
-                MessageBox.Show("Operation completed successfully.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show($"Operation completed: {processedItems}/{totalItems} processed, {errorItems} had errors such as '{lastError}'", "Done", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
