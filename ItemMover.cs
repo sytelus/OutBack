@@ -106,6 +106,14 @@ namespace OutBack
             string[] pathParts = folderPath.Split('\\');
             Outlook.Folder currentFolder = rootFolder;
 
+            if (pathParts.Length > 0 && pathParts[0].Contains("@"))
+            {
+                // Remove first element of pathParts if it contains an email address
+                string[] temp = new string[pathParts.Length - 1];
+                Array.Copy(pathParts, 1, temp, 0, temp.Length);
+                pathParts = temp;
+            }
+
             foreach (string part in pathParts)
             {
                 if (string.IsNullOrEmpty(part)) continue;
