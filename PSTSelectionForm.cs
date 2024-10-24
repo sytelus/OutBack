@@ -1,40 +1,55 @@
 using System;
 using System.Windows.Forms;
+using Outlook = Microsoft.Office.Interop.Outlook;
+using System.Runtime.InteropServices;
 
 namespace OutBack
 {
     public partial class PSTSelectionForm : Form
     {
-        public string PstFilePath { get; private set; }
-
+        public string SelectedStoreName { get; private set; }
         public bool IsMoveOperation { get; private set; }
 
         public PSTSelectionForm()
         {
             InitializeComponent();
+            PopulateStoreComboBox();
         }
 
-        private void btnBrowse_Click(object sender, EventArgs e)
+        private void PopulateStoreComboBox()
         {
-            OpenFileDialog dlg = new OpenFileDialog();
-            dlg.Filter = "Outlook PST Files (*.pst)|*.pst";
-            dlg.Title = "Select PST File";
-
-            if (dlg.ShowDialog() == DialogResult.OK)
+            Outlook.Stores stores = null;
+            try
             {
-                txtPstFilePath.Text = dlg.FileName;
+                stores = Globals.ThisAddIn.Application.Session.Stores;
+                foreach (Outlook.Store store in stores)
+                {
+                    try
+                    {
+                        cboStores.Items.Add(store.DisplayName);
+                    }
+                    finally
+                    {
+                        Marshal.ReleaseComObject(store);
+                    }
+                }
+            }
+            finally
+            {
+                if (stores != null)
+                    Marshal.ReleaseComObject(stores);
             }
         }
 
         private void btnOK_Click(object sender, EventArgs e)
         {
-            if (string.IsNullOrEmpty(txtPstFilePath.Text))
+            if (cboStores.SelectedItem == null)
             {
                 MessageBox.Show("Please select a PST file.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
-            PstFilePath = txtPstFilePath.Text;
+            SelectedStoreName = cboStores.SelectedItem.ToString();
             IsMoveOperation = chkMoveItems.Checked;
 
             this.DialogResult = DialogResult.OK;
@@ -49,7 +64,17 @@ namespace OutBack
 
         private void PSTSelectionForm_Load(object sender, EventArgs e)
         {
-            labelSourceFolder.Text = Globals.ThisAddIn.Application.ActiveExplorer().CurrentFolder.FolderPath;
+            Outlook.MAPIFolder folder = null;
+            try
+            {
+                folder = Globals.ThisAddIn.Application.ActiveExplorer().CurrentFolder;
+                labelSourceFolder.Text = folder.FolderPath;
+            }
+            finally
+            {
+                if (folder != null)
+                    Marshal.ReleaseComObject(folder);
+            }
         }
     }
 }

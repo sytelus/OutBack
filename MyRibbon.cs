@@ -19,7 +19,7 @@ namespace OutBack
             PSTSelectionForm pstForm = new PSTSelectionForm();
             if (pstForm.ShowDialog() == DialogResult.OK)
             {
-                var pstFilePath = pstForm.PstFilePath;
+                var pstFilePath = pstForm.SelectedStoreName;
                 var isMoveOperation = pstForm.IsMoveOperation;
 
                 ItemMover mover = new ItemMover();

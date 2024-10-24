@@ -3,8 +3,7 @@ namespace OutBack
     partial class PSTSelectionForm
     {
         private System.Windows.Forms.Label lblPstFile;
-        private System.Windows.Forms.TextBox txtPstFilePath;
-        private System.Windows.Forms.Button btnBrowse;
+        private System.Windows.Forms.ComboBox cboStores;
         private System.Windows.Forms.CheckBox chkMoveItems;
         private System.Windows.Forms.Button btnOK;
         private System.Windows.Forms.Button btnCancel;
@@ -12,43 +11,34 @@ namespace OutBack
         private void InitializeComponent()
         {
             this.lblPstFile = new System.Windows.Forms.Label();
-            this.txtPstFilePath = new System.Windows.Forms.TextBox();
-            this.btnBrowse = new System.Windows.Forms.Button();
+            this.cboStores = new System.Windows.Forms.ComboBox();
             this.chkMoveItems = new System.Windows.Forms.CheckBox();
             this.btnOK = new System.Windows.Forms.Button();
             this.btnCancel = new System.Windows.Forms.Button();
             this.label1 = new System.Windows.Forms.Label();
             this.labelSourceFolder = new System.Windows.Forms.Label();
             this.SuspendLayout();
-            // 
+            //
             // lblPstFile
-            // 
+            //
             this.lblPstFile.AutoSize = true;
             this.lblPstFile.Location = new System.Drawing.Point(12, 15);
             this.lblPstFile.Name = "lblPstFile";
             this.lblPstFile.Size = new System.Drawing.Size(94, 25);
             this.lblPstFile.TabIndex = 0;
             this.lblPstFile.Text = "PST File:";
-            // 
-            // txtPstFilePath
-            // 
-            this.txtPstFilePath.Location = new System.Drawing.Point(100, 12);
-            this.txtPstFilePath.Name = "txtPstFilePath";
-            this.txtPstFilePath.Size = new System.Drawing.Size(250, 29);
-            this.txtPstFilePath.TabIndex = 1;
-            // 
-            // btnBrowse
-            // 
-            this.btnBrowse.Location = new System.Drawing.Point(410, 12);
-            this.btnBrowse.Name = "btnBrowse";
-            this.btnBrowse.Size = new System.Drawing.Size(98, 38);
-            this.btnBrowse.TabIndex = 2;
-            this.btnBrowse.Text = "Browse...";
-            this.btnBrowse.UseVisualStyleBackColor = true;
-            this.btnBrowse.Click += new System.EventHandler(this.btnBrowse_Click);
-            // 
+            //
+            // cboStores
+            //
+            this.cboStores.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cboStores.FormattingEnabled = true;
+            this.cboStores.Location = new System.Drawing.Point(100, 12);
+            this.cboStores.Name = "cboStores";
+            this.cboStores.Size = new System.Drawing.Size(410, 33);
+            this.cboStores.TabIndex = 1;
+            //
             // chkMoveItems
-            // 
+            //
             this.chkMoveItems.AutoSize = true;
             this.chkMoveItems.Location = new System.Drawing.Point(68, 48);
             this.chkMoveItems.Name = "chkMoveItems";
@@ -56,9 +46,9 @@ namespace OutBack
             this.chkMoveItems.TabIndex = 3;
             this.chkMoveItems.Text = "Move Items";
             this.chkMoveItems.UseVisualStyleBackColor = true;
-            // 
+            //
             // btnOK
-            // 
+            //
             this.btnOK.Location = new System.Drawing.Point(306, 135);
             this.btnOK.Name = "btnOK";
             this.btnOK.Size = new System.Drawing.Size(98, 39);
@@ -66,9 +56,9 @@ namespace OutBack
             this.btnOK.Text = "Start";
             this.btnOK.UseVisualStyleBackColor = true;
             this.btnOK.Click += new System.EventHandler(this.btnOK_Click);
-            // 
+            //
             // btnCancel
-            // 
+            //
             this.btnCancel.Location = new System.Drawing.Point(410, 135);
             this.btnCancel.Name = "btnCancel";
             this.btnCancel.Size = new System.Drawing.Size(100, 39);
@@ -76,42 +66,40 @@ namespace OutBack
             this.btnCancel.Text = "Cancel";
             this.btnCancel.UseVisualStyleBackColor = true;
             this.btnCancel.Click += new System.EventHandler(this.btnCancel_Click);
-            // 
+            //
             // label1
-            // 
+            //
             this.label1.AutoSize = true;
             this.label1.Location = new System.Drawing.Point(23, 102);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(73, 25);
             this.label1.TabIndex = 6;
             this.label1.Text = "Folder:";
-            // 
+            //
             // labelSourceFolder
-            // 
+            //
             this.labelSourceFolder.AutoSize = true;
             this.labelSourceFolder.Location = new System.Drawing.Point(102, 102);
             this.labelSourceFolder.Name = "labelSourceFolder";
             this.labelSourceFolder.Size = new System.Drawing.Size(64, 25);
             this.labelSourceFolder.TabIndex = 7;
             this.labelSourceFolder.Text = "label2";
-            // 
+            //
             // PSTSelectionForm
-            // 
+            //
             this.ClientSize = new System.Drawing.Size(522, 186);
             this.Controls.Add(this.labelSourceFolder);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.btnCancel);
             this.Controls.Add(this.btnOK);
             this.Controls.Add(this.chkMoveItems);
-            this.Controls.Add(this.btnBrowse);
-            this.Controls.Add(this.txtPstFilePath);
+            this.Controls.Add(this.cboStores);
             this.Controls.Add(this.lblPstFile);
             this.Name = "PSTSelectionForm";
             this.Text = "Select PST File";
             this.Load += new System.EventHandler(this.PSTSelectionForm_Load);
             this.ResumeLayout(false);
             this.PerformLayout();
-
         }
 
         private System.Windows.Forms.Label label1;
