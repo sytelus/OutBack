@@ -16,6 +16,8 @@ namespace OutBack
             this.labelErrorItems = new System.Windows.Forms.Label();
             this.labelLastError = new System.Windows.Forms.Label();
             this.buttonCancel = new System.Windows.Forms.Button();
+            this.labelSource = new System.Windows.Forms.Label();
+            this.labelDestination = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
             // progressBar
@@ -55,7 +57,7 @@ namespace OutBack
             // labelErrorItems
             // 
             this.labelErrorItems.AutoSize = true;
-            this.labelErrorItems.Location = new System.Drawing.Point(12, 147);
+            this.labelErrorItems.Location = new System.Drawing.Point(12, 213);
             this.labelErrorItems.Name = "labelErrorItems";
             this.labelErrorItems.Size = new System.Drawing.Size(115, 20);
             this.labelErrorItems.TabIndex = 4;
@@ -64,7 +66,7 @@ namespace OutBack
             // labelLastError
             // 
             this.labelLastError.AutoSize = true;
-            this.labelLastError.Location = new System.Drawing.Point(12, 185);
+            this.labelLastError.Location = new System.Drawing.Point(12, 243);
             this.labelLastError.Name = "labelLastError";
             this.labelLastError.Size = new System.Drawing.Size(82, 40);
             this.labelLastError.TabIndex = 5;
@@ -81,9 +83,29 @@ namespace OutBack
             this.buttonCancel.UseVisualStyleBackColor = true;
             this.buttonCancel.Click += new System.EventHandler(this.button1_Click);
             // 
+            // labelSource
+            // 
+            this.labelSource.AutoSize = true;
+            this.labelSource.Location = new System.Drawing.Point(11, 146);
+            this.labelSource.Name = "labelSource";
+            this.labelSource.Size = new System.Drawing.Size(57, 20);
+            this.labelSource.TabIndex = 7;
+            this.labelSource.Text = "source";
+            // 
+            // labelDestination
+            // 
+            this.labelDestination.AutoSize = true;
+            this.labelDestination.Location = new System.Drawing.Point(12, 176);
+            this.labelDestination.Name = "labelDestination";
+            this.labelDestination.Size = new System.Drawing.Size(87, 20);
+            this.labelDestination.TabIndex = 8;
+            this.labelDestination.Text = "destination";
+            // 
             // ProgressForm
             // 
             this.ClientSize = new System.Drawing.Size(740, 542);
+            this.Controls.Add(this.labelDestination);
+            this.Controls.Add(this.labelSource);
             this.Controls.Add(this.buttonCancel);
             this.Controls.Add(this.labelLastError);
             this.Controls.Add(this.labelErrorItems);
@@ -101,5 +123,7 @@ namespace OutBack
         private System.Windows.Forms.Label labelErrorItems;
         private System.Windows.Forms.Label labelLastError;
         private System.Windows.Forms.Button buttonCancel;
+        private System.Windows.Forms.Label labelSource;
+        private System.Windows.Forms.Label labelDestination;
     }
 }

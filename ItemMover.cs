@@ -34,7 +34,7 @@ namespace OutBack
                 int processedItems = 0;
                 int errorItems = 0;
 
-                using (ProgressForm progressForm = new ProgressForm())
+                using (ProgressForm progressForm = new ProgressForm(sourceFolder.FolderPath, destFolder.FolderPath))
                 {
                     progressForm.Show();
                     Stopwatch stopwatch = Stopwatch.StartNew();

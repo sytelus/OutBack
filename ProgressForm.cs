@@ -7,9 +7,11 @@ namespace OutBack
     {
         bool isCancelled = false;
 
-        public ProgressForm()
+        public ProgressForm(string sourceFolder, string destinationFolder)
         {
             InitializeComponent();
+            labelSource.Text = $"Source: {sourceFolder}";
+            labelDestination.Text = $"Destination: {destinationFolder}";
         }
 
         public bool UpdateProgress(int processedItems, int totalItems, int errorItems, string lastError, TimeSpan elapsedTime)
