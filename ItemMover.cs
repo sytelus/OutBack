@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Outlook = Microsoft.Office.Interop.Outlook;
@@ -8,6 +9,8 @@ namespace OutBack
 {
     public class ItemMover
     {
+        private const int BATCH_SIZE = 20; // Process items in smaller batches
+
         public async void Start(Outlook.MAPIFolder sourceFolder, string pstFilePath, bool isMoveOperation)
         {
             try
@@ -18,12 +21,20 @@ namespace OutBack
 
                 foreach (Outlook.Store store in stores)
                 {
-                    if (store.FilePath == pstFilePath)
+                    try
                     {
-                        pstStore = store;
-                        break;
+                        if (store.FilePath == pstFilePath)
+                        {
+                            pstStore = store;
+                            break;
+                        }
+                    }
+                    finally
+                    {
+                        if (store != pstStore) Marshal.ReleaseComObject(store);
                     }
                 }
+                Marshal.ReleaseComObject(stores);
 
                 if (pstStore == null)
                 {
@@ -32,6 +43,7 @@ namespace OutBack
 
                 // Get or create the destination folder
                 Outlook.MAPIFolder destFolder = GetOrCreateFolder(pstStore, sourceFolder.FolderPath);
+                Marshal.ReleaseComObject(pstStore);
 
                 // Get all items in the source folder
                 Outlook.Items items = sourceFolder.Items;
@@ -39,60 +51,79 @@ namespace OutBack
                 int processedItems = 0;
                 int errorItems = 0;
 
-                ProgressForm progressForm = new ProgressForm();
-                progressForm.Show();
-
-                Stopwatch stopwatch = Stopwatch.StartNew();
-                bool isCancelled = false;
-                string lastError = "";
-
-                await Task.Run(() =>
+                using (ProgressForm progressForm = new ProgressForm())
                 {
-                    foreach (Outlook.MailItem item in items)
+                    progressForm.Show();
+                    Stopwatch stopwatch = Stopwatch.StartNew();
+                    bool isCancelled = false;
+                    string lastError = "";
+
+                    await Task.Run(() =>
                     {
-                        if (isCancelled) break;
-                        try
+                        for (int i = totalItems; i > 0; i--)
                         {
-                            //// Ensure item is fully downloaded
-                            //if (item is Outlook._MailItem mailItem)
-                            //{
-                            //    if ((mailItem.Conflicts != null && mailItem.Conflicts.Count > 0) || mailItem.IsMarkedAsTask)
-                            //    {
-                            //        // Skip problematic items
-                            //        continue;
-                            //    }
-                            //}
+                            if (isCancelled) break;
 
-                            if (isMoveOperation)
+                            if ((i % BATCH_SIZE == 0) || (i == totalItems))
                             {
-                                item.Move(destFolder);
+                                // Force garbage collection periodically
+                                GC.Collect();
+                                GC.WaitForPendingFinalizers();
                             }
-                            else
-                            {
-                                item.Copy().Move(destFolder);
-                            }
-                        }
-                        catch(Exception ex)
-                        {
-                            lastError = ex.Message;
-                            // Ignore items that cannot be copied or moved
-                            errorItems++;
-                            continue;
-                        }
-                        finally
-                        {
-                            processedItems++;
-                            progressForm.Invoke(new Action(() =>
-                            {
-                                isCancelled = progressForm.UpdateProgress(processedItems, totalItems, errorItems, lastError, stopwatch.Elapsed);
-                            }));
-                        }
-                    }
-                });
 
-                stopwatch.Stop();
-                progressForm.Close();
-                MessageBox.Show($"Operation completed: {processedItems}/{totalItems} processed, {errorItems} had errors such as '{lastError}'", "Done", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            Outlook.MailItem item = null;
+                            try
+                            {
+                                item = items[i] as Outlook.MailItem;
+                                if (item == null) continue;
+
+                                if (isMoveOperation)
+                                {
+                                    Outlook.MailItem movedItem = item.Move(destFolder);
+                                    if (movedItem != null) Marshal.ReleaseComObject(movedItem);
+                                }
+                                else
+                                {
+                                    Outlook.MailItem copiedItem = item.Copy();
+                                    Outlook.MailItem movedItem = copiedItem.Move(destFolder);
+                                    if (copiedItem != null) Marshal.ReleaseComObject(copiedItem);
+                                    if (movedItem != null) Marshal.ReleaseComObject(movedItem);
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                lastError = ex.Message;
+                                errorItems++;
+                                continue;
+                            }
+                            finally
+                            {
+                                if (item != null)
+                                {
+                                    item.Close(Outlook.OlInspectorClose.olDiscard);
+                                    Marshal.ReleaseComObject(item);
+                                }
+
+                                processedItems++;
+                                progressForm.Invoke(new Action(() =>
+                                {
+                                    isCancelled = progressForm.UpdateProgress(processedItems, totalItems, errorItems, lastError, stopwatch.Elapsed);
+                                }));
+                            }
+                        }
+                    });
+
+                    stopwatch.Stop();
+                    progressForm.Close();
+
+                    // Clean up final objects
+                    Marshal.ReleaseComObject(items);
+                    Marshal.ReleaseComObject(destFolder);
+                    Marshal.ReleaseComObject(sourceFolder);
+
+                    MessageBox.Show($"Operation completed: {processedItems}/{totalItems} processed, {errorItems} had errors such as '{lastError}'",
+                        "Done", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
             }
             catch (Exception ex)
             {
@@ -108,7 +139,6 @@ namespace OutBack
 
             if (pathParts.Length > 0 && pathParts[0].Contains("@"))
             {
-                // Remove first element of pathParts if it contains an email address
                 string[] temp = new string[pathParts.Length - 1];
                 Array.Copy(pathParts, 1, temp, 0, temp.Length);
                 pathParts = temp;
@@ -117,18 +147,23 @@ namespace OutBack
             foreach (string part in pathParts)
             {
                 if (string.IsNullOrEmpty(part)) continue;
+
                 Outlook.Folder subFolder = null;
                 try
                 {
                     subFolder = currentFolder.Folders[part] as Outlook.Folder;
+                    if (currentFolder != rootFolder) Marshal.ReleaseComObject(currentFolder);
+                    currentFolder = subFolder;
                 }
                 catch
                 {
-                    // Folder does not exist, create it
                     subFolder = currentFolder.Folders.Add(part, Outlook.OlDefaultFolders.olFolderInbox) as Outlook.Folder;
+                    if (currentFolder != rootFolder) Marshal.ReleaseComObject(currentFolder);
+                    currentFolder = subFolder;
                 }
-                currentFolder = subFolder;
             }
+
+            Marshal.ReleaseComObject(rootFolder);
             return currentFolder;
         }
     }
