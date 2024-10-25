@@ -50,6 +50,7 @@ namespace OutBack
                 int totalItems = items.Count;
                 int processedItems = 0;
                 int errorItems = 0;
+                int skippedItems = 0;  // New counter for skipped items
 
                 using (ProgressForm progressForm = new ProgressForm(sourceFolder.FolderPath, destFolder.FolderPath))
                 {
@@ -85,6 +86,7 @@ namespace OutBack
                                 // Check if the item is older than or equal to the cutoff date
                                 if (monthsOld > 0 && item.ReceivedTime > cutoffDate)
                                 {
+                                    skippedItems++;  // Increment skipped items count
                                     continue;
                                 }
 
@@ -122,7 +124,7 @@ namespace OutBack
                                 processedItems++;
                                 progressForm.Invoke(new Action(() =>
                                 {
-                                    isCancelled = progressForm.UpdateProgress(processedItems, totalItems, errorItems, lastError, stopwatch.Elapsed);
+                                    isCancelled = progressForm.UpdateProgress(processedItems, totalItems, errorItems, skippedItems, lastError, stopwatch.Elapsed);
                                 }));
                             }
                         }
@@ -131,7 +133,7 @@ namespace OutBack
                     stopwatch.Stop();
                     progressForm.Close();
 
-                    string completionMessage = $"Operation completed: {processedItems}/{totalItems} processed, {errorItems} had errors";
+                    string completionMessage = $"Operation completed: {processedItems}/{totalItems} processed, {errorItems} had errors, {skippedItems} skipped";
                     Log(completionMessage);
                     Log($"Total time: {stopwatch.Elapsed}");
 

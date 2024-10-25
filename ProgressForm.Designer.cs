@@ -6,6 +6,12 @@ namespace OutBack
         private System.Windows.Forms.Label lblStatus;
         private System.Windows.Forms.Label lblTimeElapsed;
         private System.Windows.Forms.Label lblTimeRemaining;
+        private System.Windows.Forms.Label labelErrorItems;
+        private System.Windows.Forms.Label labelLastError;
+        private System.Windows.Forms.Button buttonCancel;
+        private System.Windows.Forms.Label labelSource;
+        private System.Windows.Forms.Label labelDestination;
+        private System.Windows.Forms.Label labelSkippedItems;
 
         private void InitializeComponent()
         {
@@ -18,62 +24,63 @@ namespace OutBack
             this.buttonCancel = new System.Windows.Forms.Button();
             this.labelSource = new System.Windows.Forms.Label();
             this.labelDestination = new System.Windows.Forms.Label();
+            this.labelSkippedItems = new System.Windows.Forms.Label();
             this.SuspendLayout();
-            // 
+            //
             // progressBar
-            // 
+            //
             this.progressBar.Location = new System.Drawing.Point(15, 25);
             this.progressBar.Name = "progressBar";
             this.progressBar.Size = new System.Drawing.Size(360, 23);
             this.progressBar.TabIndex = 0;
-            // 
+            //
             // lblStatus
-            // 
+            //
             this.lblStatus.AutoSize = true;
             this.lblStatus.Location = new System.Drawing.Point(12, 61);
             this.lblStatus.Name = "lblStatus";
             this.lblStatus.Size = new System.Drawing.Size(143, 20);
             this.lblStatus.TabIndex = 1;
             this.lblStatus.Text = "Processed 0 items.";
-            // 
+            //
             // lblTimeElapsed
-            // 
+            //
             this.lblTimeElapsed.AutoSize = true;
             this.lblTimeElapsed.Location = new System.Drawing.Point(12, 84);
             this.lblTimeElapsed.Name = "lblTimeElapsed";
             this.lblTimeElapsed.Size = new System.Drawing.Size(113, 20);
             this.lblTimeElapsed.TabIndex = 2;
             this.lblTimeElapsed.Text = "Time Elapsed: ";
-            // 
+            //
             // lblTimeRemaining
-            // 
+            //
             this.lblTimeRemaining.AutoSize = true;
             this.lblTimeRemaining.Location = new System.Drawing.Point(12, 107);
             this.lblTimeRemaining.Name = "lblTimeRemaining";
             this.lblTimeRemaining.Size = new System.Drawing.Size(165, 20);
             this.lblTimeRemaining.TabIndex = 3;
             this.lblTimeRemaining.Text = "Estimated Remaining:";
-            // 
+            //
             // labelErrorItems
-            // 
+            //
             this.labelErrorItems.AutoSize = true;
             this.labelErrorItems.Location = new System.Drawing.Point(12, 213);
             this.labelErrorItems.Name = "labelErrorItems";
             this.labelErrorItems.Size = new System.Drawing.Size(115, 20);
             this.labelErrorItems.TabIndex = 4;
             this.labelErrorItems.Text = "Errors: 0 items.";
-            // 
+            //
             // labelLastError
-            // 
+            //
             this.labelLastError.AutoSize = true;
             this.labelLastError.Location = new System.Drawing.Point(12, 255);
             this.labelLastError.Name = "labelLastError";
             this.labelLastError.Size = new System.Drawing.Size(82, 40);
             this.labelLastError.TabIndex = 5;
             this.labelLastError.Text = "Error\r\nMessages\r\n";
-            // 
+            //
             // buttonCancel
-            // 
+            //
             this.buttonCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
             this.buttonCancel.Location = new System.Drawing.Point(554, 25);
             this.buttonCancel.Name = "buttonCancel";
@@ -82,27 +89,36 @@ namespace OutBack
             this.buttonCancel.Text = "Cancel";
             this.buttonCancel.UseVisualStyleBackColor = true;
             this.buttonCancel.Click += new System.EventHandler(this.button1_Click);
-            // 
+            //
             // labelSource
-            // 
+            //
             this.labelSource.AutoSize = true;
             this.labelSource.Location = new System.Drawing.Point(11, 146);
             this.labelSource.Name = "labelSource";
             this.labelSource.Size = new System.Drawing.Size(57, 20);
             this.labelSource.TabIndex = 7;
             this.labelSource.Text = "source";
-            // 
+            //
             // labelDestination
-            // 
+            //
             this.labelDestination.AutoSize = true;
             this.labelDestination.Location = new System.Drawing.Point(12, 176);
             this.labelDestination.Name = "labelDestination";
             this.labelDestination.Size = new System.Drawing.Size(87, 20);
             this.labelDestination.TabIndex = 8;
             this.labelDestination.Text = "destination";
-            // 
+            //
+            // labelSkippedItems
+            //
+            this.labelSkippedItems.AutoSize = true;
+            this.labelSkippedItems.Location = new System.Drawing.Point(12, 233);
+            this.labelSkippedItems.Name = "labelSkippedItems";
+            this.labelSkippedItems.Size = new System.Drawing.Size(115, 20);
+            this.labelSkippedItems.TabIndex = 9;
+            this.labelSkippedItems.Text = "Skipped: 0 items.";
+            //
             // ProgressForm
-            // 
+            //
             this.ClientSize = new System.Drawing.Size(740, 542);
             this.Controls.Add(this.labelDestination);
             this.Controls.Add(this.labelSource);
@@ -113,6 +129,7 @@ namespace OutBack
             this.Controls.Add(this.lblTimeElapsed);
             this.Controls.Add(this.lblStatus);
             this.Controls.Add(this.progressBar);
+            this.Controls.Add(this.labelSkippedItems);
             this.Name = "ProgressForm";
             this.Text = "Processing Items";
             this.ResumeLayout(false);
@@ -125,5 +142,6 @@ namespace OutBack
         private System.Windows.Forms.Button buttonCancel;
         private System.Windows.Forms.Label labelSource;
         private System.Windows.Forms.Label labelDestination;
+        private System.Windows.Forms.Label labelSkippedItems;
     }
 }

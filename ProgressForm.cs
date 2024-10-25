@@ -14,7 +14,7 @@ namespace OutBack
             labelDestination.Text = $"Destination: {destinationFolder}";
         }
 
-        public bool UpdateProgress(int processedItems, int totalItems, int errorItems, string lastError, TimeSpan elapsedTime)
+        public bool UpdateProgress(int processedItems, int totalItems, int errorItems, int skippedItems, string lastError, TimeSpan elapsedTime)
         {
             progressBar.Value = (int)((double)processedItems / totalItems * 100);
             lblStatus.Text = $"Processed {processedItems} of {totalItems} items.";
@@ -22,9 +22,10 @@ namespace OutBack
             TimeSpan estimatedRemaining = TimeSpan.FromTicks(elapsedTime.Ticks * (totalItems - processedItems) / processedItems);
             lblTimeRemaining.Text = $"Estimated Time Remaining: {estimatedRemaining.ToString(@"hh\:mm\:ss")}";
             labelErrorItems.Text = $"Error Items: {errorItems}";
+            labelSkippedItems.Text = $"Skipped Items: {skippedItems}";  // New label for skipped items
             if (!string.IsNullOrEmpty(lastError))
             {
-                labelErrorItems.Text = $"\nLast Error: '{lastError}'";
+                labelLastError.Text = $"Last Error: '{lastError}'";
             }
             Application.DoEvents();
             return isCancelled;
