@@ -4,15 +4,32 @@ using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Outlook = Microsoft.Office.Interop.Outlook;
+using System.IO;
 
 namespace OutBack
 {
     public class ItemMover
     {
         private const int BATCH_SIZE = 20; // Process items in smaller batches
+        private string logFilePath;
+
+        public ItemMover()
+        {
+            string logDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".OutBack");
+            Directory.CreateDirectory(logDirectory);
+            logFilePath = Path.Combine(logDirectory, $"OutBack_Log_{DateTime.Now:yyyyMMdd_HHmmss}.txt");
+        }
+
+        private void Log(string message)
+        {
+            string logEntry = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} - {message}";
+            File.AppendAllText(logFilePath, logEntry + Environment.NewLine);
+        }
 
         public async void Start(Outlook.MAPIFolder sourceFolder, string storeName, bool isMoveOperation, double monthsOld)
         {
+            Log($"Operation started: Source={sourceFolder.FolderPath}, Store={storeName}, Move={isMoveOperation}, MonthsOld={monthsOld}");
+
             Outlook.Store pstStore = null;
             Outlook.MAPIFolder destFolder = null;
             Outlook.Items items = null;
@@ -85,6 +102,7 @@ namespace OutBack
                             {
                                 lastError = ex.Message;
                                 errorItems++;
+                                Log($"Error processing item {i}: {ex.Message}");
                             }
                             finally
                             {
@@ -113,13 +131,19 @@ namespace OutBack
                     stopwatch.Stop();
                     progressForm.Close();
 
-                    MessageBox.Show($"Operation completed: {processedItems}/{totalItems} processed, {errorItems} had errors such as '{lastError}'",
+                    string completionMessage = $"Operation completed: {processedItems}/{totalItems} processed, {errorItems} had errors";
+                    Log(completionMessage);
+                    Log($"Total time: {stopwatch.Elapsed}");
+
+                    MessageBox.Show($"{completionMessage}. Last error: '{lastError}'",
                         "Done", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"An error occurred: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                string errorMessage = $"An error occurred: {ex.Message}";
+                Log(errorMessage);
+                MessageBox.Show(errorMessage, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             finally
             {
