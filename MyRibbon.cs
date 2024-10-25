@@ -21,9 +21,10 @@ namespace OutBack
             {
                 var pstFilePath = pstForm.SelectedStoreName;
                 var isMoveOperation = pstForm.IsMoveOperation;
+                var monthsOld = pstForm.MonthsOld;
 
                 ItemMover mover = new ItemMover();
-                mover.Start(Globals.ThisAddIn.Application.ActiveExplorer().CurrentFolder, pstFilePath, isMoveOperation);
+                mover.Start(Globals.ThisAddIn.Application.ActiveExplorer().CurrentFolder, pstFilePath, isMoveOperation, monthsOld);
             }
         }
     }
