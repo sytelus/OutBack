@@ -66,7 +66,7 @@ namespace OutBack
             // labelLastError
             // 
             this.labelLastError.AutoSize = true;
-            this.labelLastError.Location = new System.Drawing.Point(12, 243);
+            this.labelLastError.Location = new System.Drawing.Point(12, 255);
             this.labelLastError.Name = "labelLastError";
             this.labelLastError.Size = new System.Drawing.Size(82, 40);
             this.labelLastError.TabIndex = 5;
