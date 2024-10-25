@@ -11,7 +11,7 @@ namespace OutBack
     {
         private const int BATCH_SIZE = 20; // Process items in smaller batches
 
-        public async void Start(Outlook.MAPIFolder sourceFolder, string storeName, bool isMoveOperation)
+        public async void Start(Outlook.MAPIFolder sourceFolder, string storeName, bool isMoveOperation, double monthsOld)
         {
             Outlook.Store pstStore = null;
             Outlook.MAPIFolder destFolder = null;
@@ -41,6 +41,8 @@ namespace OutBack
                     bool isCancelled = false;
                     string lastError = "";
 
+                    DateTime cutoffDate = DateTime.Now.AddMonths(-(int)Math.Floor(monthsOld));
+
                     await Task.Run(() =>
                     {
                         for (int i = 1; i <= totalItems; i++)
@@ -62,6 +64,12 @@ namespace OutBack
                             {
                                 item = items[i] as Outlook.MailItem;
                                 if (item == null) continue;
+
+                                // Check if the item is older than or equal to the cutoff date
+                                if (monthsOld > 0 && item.ReceivedTime > cutoffDate)
+                                {
+                                    continue;
+                                }
 
                                 if (isMoveOperation)
                                 {

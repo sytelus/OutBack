@@ -7,6 +7,8 @@ namespace OutBack
         private System.Windows.Forms.CheckBox chkMoveItems;
         private System.Windows.Forms.Button btnOK;
         private System.Windows.Forms.Button btnCancel;
+        private System.Windows.Forms.Label lblMonthsOld;
+        private System.Windows.Forms.TextBox txtMonthsOld;
 
         private void InitializeComponent()
         {
@@ -17,6 +19,8 @@ namespace OutBack
             this.btnCancel = new System.Windows.Forms.Button();
             this.label1 = new System.Windows.Forms.Label();
             this.labelSourceFolder = new System.Windows.Forms.Label();
+            this.lblMonthsOld = new System.Windows.Forms.Label();
+            this.txtMonthsOld = new System.Windows.Forms.TextBox();
             this.SuspendLayout();
             //
             // lblPstFile
@@ -85,9 +89,28 @@ namespace OutBack
             this.labelSourceFolder.TabIndex = 7;
             this.labelSourceFolder.Text = "label2";
             //
+            // lblMonthsOld
+            //
+            this.lblMonthsOld.AutoSize = true;
+            this.lblMonthsOld.Location = new System.Drawing.Point(12, 80);
+            this.lblMonthsOld.Name = "lblMonthsOld";
+            this.lblMonthsOld.Size = new System.Drawing.Size(140, 25);
+            this.lblMonthsOld.TabIndex = 8;
+            this.lblMonthsOld.Text = "Only months old:";
+            //
+            // txtMonthsOld
+            //
+            this.txtMonthsOld.Location = new System.Drawing.Point(158, 77);
+            this.txtMonthsOld.Name = "txtMonthsOld";
+            this.txtMonthsOld.Size = new System.Drawing.Size(100, 30);
+            this.txtMonthsOld.TabIndex = 9;
+            this.txtMonthsOld.Text = "0";
+            //
             // PSTSelectionForm
             //
-            this.ClientSize = new System.Drawing.Size(522, 186);
+            this.ClientSize = new System.Drawing.Size(522, 220);
+            this.Controls.Add(this.txtMonthsOld);
+            this.Controls.Add(this.lblMonthsOld);
             this.Controls.Add(this.labelSourceFolder);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.btnCancel);

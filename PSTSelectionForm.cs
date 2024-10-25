@@ -9,6 +9,7 @@ namespace OutBack
     {
         public string SelectedStoreName { get; private set; }
         public bool IsMoveOperation { get; private set; }
+        public double MonthsOld { get; private set; }
 
         public PSTSelectionForm()
         {
@@ -49,8 +50,15 @@ namespace OutBack
                 return;
             }
 
+            if (!double.TryParse(txtMonthsOld.Text, out double monthsOld))
+            {
+                MessageBox.Show("Please enter a valid number for months old.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
             SelectedStoreName = cboStores.SelectedItem.ToString();
             IsMoveOperation = chkMoveItems.Checked;
+            MonthsOld = monthsOld;
 
             this.DialogResult = DialogResult.OK;
             this.Close();
