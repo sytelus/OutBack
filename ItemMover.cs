@@ -83,6 +83,12 @@ namespace OutBack
                                 item = items[i] as Outlook.MailItem;
                                 if (item == null) continue;
 
+                                if (item.Permission != Outlook.OlPermission.olUnrestricted)
+                                {
+                                    skippedItems++;  // Increment skipped items count
+                                    continue;
+                                }
+
                                 // Check if the item is older than or equal to the cutoff date
                                 if (monthsOld > 0 && item.ReceivedTime > cutoffDate)
                                 {
