@@ -48,9 +48,7 @@ namespace OutBack
 
                 // Get all items in the source folder
                 items = sourceFolder.Items;
-                int totalItems = items.Count;
                 int processedItems = 0;
-                int errorItems = 0;
                 int skippedItems = 0;  // New counter for skipped items
 
                 using (ProgressForm progressForm = new ProgressForm(sourceFolder.FolderPath, destFolder.FolderPath))
@@ -62,80 +60,92 @@ namespace OutBack
 
                     DateTime cutoffDate = DateTime.Now.AddMonths(-(int)Math.Floor(monthsOld));
 
-                    await Task.Run(() =>
+                    int errorItems;
+                    int retries = -1;
+                    int totalItems;
+
+                    do
                     {
-                        for (int i = 1; i <= totalItems; i++)
+                        totalItems = items.Count;
+                        errorItems = 0;
+                        retries++;
+
+                        await Task.Run(() =>
                         {
-                            if (isCancelled) break;
-
-                            if ((i % BATCH_SIZE == 0) || (i == totalItems))
+                            for (int i = 1; i <= totalItems; i++)
                             {
-                                // Force garbage collection periodically
-                                GC.Collect();
-                                GC.WaitForPendingFinalizers();
+                                if (isCancelled) break;
+
+                                if ((i % BATCH_SIZE == 0) || (i == totalItems))
+                                {
+                                    // Force garbage collection periodically
+                                    GC.Collect();
+                                    GC.WaitForPendingFinalizers();
+                                }
+
+                                Outlook.MailItem item = null;
+                                Outlook.MailItem movedItem = null;
+                                Outlook.MailItem copiedItem = null;
+
+                                try
+                                {
+                                    item = items[i] as Outlook.MailItem;
+                                    if (item == null) continue;
+
+                                    if (item.Permission != Outlook.OlPermission.olUnrestricted)
+                                    {
+                                        skippedItems++;  // Increment skipped items count
+                                        continue;
+                                    }
+
+                                    // Check if the item is older than or equal to the cutoff date
+                                    if (monthsOld > 0 && item.ReceivedTime > cutoffDate)
+                                    {
+                                        skippedItems++;  // Increment skipped items count
+                                        continue;
+                                    }
+
+                                    if (isMoveOperation)
+                                    {
+                                        movedItem = item.Move(destFolder);
+                                    }
+                                    else
+                                    {
+                                        copiedItem = item.Copy();
+                                        movedItem = copiedItem.Move(destFolder);
+                                    }
+                                }
+                                catch (Exception ex)
+                                {
+                                    lastError = ex.Message;
+                                    errorItems++;
+                                    Log($"Error processing item {i}: {ex.Message}");
+                                }
+                                finally
+                                {
+                                    if (item != null)
+                                    {
+                                        Marshal.ReleaseComObject(item);
+                                    }
+                                    if (movedItem != null)
+                                    {
+                                        Marshal.ReleaseComObject(movedItem);
+                                    }
+                                    if (copiedItem != null)
+                                    {
+                                        Marshal.ReleaseComObject(copiedItem);
+                                    }
+
+                                    processedItems++;
+                                    progressForm.Invoke(new Action(() =>
+                                    {
+                                        isCancelled = progressForm.UpdateProgress(processedItems, totalItems, errorItems, skippedItems, lastError, stopwatch.Elapsed);
+                                    }));
+                                }
                             }
-
-                            Outlook.MailItem item = null;
-                            Outlook.MailItem movedItem = null;
-                            Outlook.MailItem copiedItem = null;
-
-                            try
-                            {
-                                item = items[i] as Outlook.MailItem;
-                                if (item == null) continue;
-
-                                if (item.Permission != Outlook.OlPermission.olUnrestricted)
-                                {
-                                    skippedItems++;  // Increment skipped items count
-                                    continue;
-                                }
-
-                                // Check if the item is older than or equal to the cutoff date
-                                if (monthsOld > 0 && item.ReceivedTime > cutoffDate)
-                                {
-                                    skippedItems++;  // Increment skipped items count
-                                    continue;
-                                }
-
-                                if (isMoveOperation)
-                                {
-                                    movedItem = item.Move(destFolder);
-                                }
-                                else
-                                {
-                                    copiedItem = item.Copy();
-                                    movedItem = copiedItem.Move(destFolder);
-                                }
-                            }
-                            catch (Exception ex)
-                            {
-                                lastError = ex.Message;
-                                errorItems++;
-                                Log($"Error processing item {i}: {ex.Message}");
-                            }
-                            finally
-                            {
-                                if (item != null)
-                                {
-                                    Marshal.ReleaseComObject(item);
-                                }
-                                if (movedItem != null)
-                                {
-                                    Marshal.ReleaseComObject(movedItem);
-                                }
-                                if (copiedItem != null)
-                                {
-                                    Marshal.ReleaseComObject(copiedItem);
-                                }
-
-                                processedItems++;
-                                progressForm.Invoke(new Action(() =>
-                                {
-                                    isCancelled = progressForm.UpdateProgress(processedItems, totalItems, errorItems, skippedItems, lastError, stopwatch.Elapsed);
-                                }));
-                            }
-                        }
-                    });
+                        });
+                    }
+                    while (errorItems > 0 && retries < 4);
 
                     stopwatch.Stop();
                     progressForm.Close();
