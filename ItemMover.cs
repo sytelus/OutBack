@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Outlook = Microsoft.Office.Interop.Outlook;
 using System.IO;
+using System.Collections.Generic;
 
 namespace OutBack
 {
@@ -194,19 +195,18 @@ namespace OutBack
             {
                 rootFolder = store.GetRootFolder() as Outlook.Folder;
                 currentFolder = rootFolder;
-                string[] pathParts = folderPath.Split('\\');
+                var pathParts = new List<string>(folderPath.Split('\\'));
 
-                if (pathParts.Length > 0 && pathParts[0].Contains("@"))
+                //reverse scan pathParts to remove any empty strings
+                for (int i = pathParts.Count - 1; i >= 0; i--)
                 {
-                    string[] temp = new string[pathParts.Length - 1];
-                    Array.Copy(pathParts, 1, temp, 0, temp.Length);
-                    pathParts = temp;
+                    if (string.IsNullOrEmpty(pathParts[i]) || pathParts[i].Contains("@"))
+                        pathParts.RemoveAt(i);
                 }
 
                 foreach (string part in pathParts)
                 {
-                    if (string.IsNullOrEmpty(part)) continue;
-
+                
                     Outlook.Folder subFolder = null;
                     try
                     {
