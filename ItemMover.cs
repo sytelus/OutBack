@@ -120,6 +120,8 @@ namespace OutBack
                                     lastError = ex.Message;
                                     errorItems++;
                                     Log($"Error processing item {i}: {ex.Message}");
+                                    if (ex.Message == "Cannot move the items")
+                                        break;
                                 }
                                 finally
                                 {
