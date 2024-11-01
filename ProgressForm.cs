@@ -12,9 +12,10 @@ namespace OutBack
             InitializeComponent();
             labelSource.Text = $"Source: {sourceFolder}";
             labelDestination.Text = $"Destination: {destinationFolder}";
+            labelRetries.Text = "Retries: 0";
         }
 
-        public bool UpdateProgress(int processedItems, int totalItems, int errorItems, int skippedItems, string lastError, TimeSpan elapsedTime)
+        public bool UpdateProgress(int processedItems, int totalItems, int errorItems, int skippedItems, string lastError, TimeSpan elapsedTime, int retryCount)
         {
             progressBar.Value = (int)((double)processedItems / totalItems * 100);
             lblStatus.Text = $"Processed {processedItems} of {totalItems} items.";
@@ -22,7 +23,8 @@ namespace OutBack
             TimeSpan estimatedRemaining = TimeSpan.FromTicks(elapsedTime.Ticks * (totalItems - processedItems) / processedItems);
             lblTimeRemaining.Text = $"Estimated Time Remaining: {estimatedRemaining.ToString(@"hh\:mm\:ss")}";
             labelErrorItems.Text = $"Error Items: {errorItems}";
-            labelSkippedItems.Text = $"Skipped Items: {skippedItems}";  // New label for skipped items
+            labelSkippedItems.Text = $"Skipped Items: {skippedItems}";
+            labelRetries.Text = $"Retries: {retryCount}";
             if (!string.IsNullOrEmpty(lastError))
             {
                 labelLastError.Text = $"Last Error: '{lastError}'";

@@ -152,7 +152,7 @@ namespace OutBack
                                     processedItems++;
                                     progressForm.Invoke(new Action(() =>
                                     {
-                                        isCancelled = progressForm.UpdateProgress(processedItems, totalItems, errorItems, skippedItems, lastError, stopwatch.Elapsed);
+                                        isCancelled = progressForm.UpdateProgress(processedItems, totalItems, errorItems, skippedItems, lastError, stopwatch.Elapsed, retries);
                                     }));
                                 }
                             }
