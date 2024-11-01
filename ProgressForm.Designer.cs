@@ -19,6 +19,7 @@ namespace OutBack
             this.labelSource = new System.Windows.Forms.Label();
             this.labelDestination = new System.Windows.Forms.Label();
             this.labelSkippedItems = new System.Windows.Forms.Label();
+            this.labelRetries = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
             // progressBar
@@ -58,7 +59,7 @@ namespace OutBack
             // labelErrorItems
             // 
             this.labelErrorItems.AutoSize = true;
-            this.labelErrorItems.Location = new System.Drawing.Point(12, 260);
+            this.labelErrorItems.Location = new System.Drawing.Point(12, 262);
             this.labelErrorItems.Name = "labelErrorItems";
             this.labelErrorItems.Size = new System.Drawing.Size(115, 20);
             this.labelErrorItems.TabIndex = 4;
@@ -67,7 +68,7 @@ namespace OutBack
             // labelLastError
             // 
             this.labelLastError.AutoSize = true;
-            this.labelLastError.Location = new System.Drawing.Point(12, 307);
+            this.labelLastError.Location = new System.Drawing.Point(11, 341);
             this.labelLastError.Name = "labelLastError";
             this.labelLastError.Size = new System.Drawing.Size(82, 40);
             this.labelLastError.TabIndex = 5;
@@ -111,9 +112,19 @@ namespace OutBack
             this.labelSkippedItems.TabIndex = 9;
             this.labelSkippedItems.Text = "Skipped Items: 0 items.";
             // 
+            // labelRetries
+            // 
+            this.labelRetries.AutoSize = true;
+            this.labelRetries.Location = new System.Drawing.Point(12, 297);
+            this.labelRetries.Name = "labelRetries";
+            this.labelRetries.Size = new System.Drawing.Size(60, 20);
+            this.labelRetries.TabIndex = 10;
+            this.labelRetries.Text = "Retries";
+            // 
             // ProgressForm
             // 
-            this.ClientSize = new System.Drawing.Size(740, 542);
+            this.ClientSize = new System.Drawing.Size(891, 802);
+            this.Controls.Add(this.labelRetries);
             this.Controls.Add(this.labelSkippedItems);
             this.Controls.Add(this.labelDestination);
             this.Controls.Add(this.labelSource);
@@ -137,5 +148,6 @@ namespace OutBack
         private System.Windows.Forms.Label labelSource;
         private System.Windows.Forms.Label labelDestination;
         private System.Windows.Forms.Label labelSkippedItems;
+        private System.Windows.Forms.Label labelRetries;
     }
 }
