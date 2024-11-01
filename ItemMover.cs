@@ -21,10 +21,22 @@ namespace OutBack
             logFilePath = Path.Combine(logDirectory, $"OutBack_Log_{DateTime.Now:yyyyMMdd_HHmmss}.txt");
         }
 
-        private void Log(string message)
+        private void Log(string message, Exception ex = null)
         {
             string logEntry = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} - {message}";
-            File.AppendAllText(logFilePath, logEntry + Environment.NewLine);
+            if (ex != null)
+            {
+                logEntry += $"\nException: {ex.GetType().FullName}" +
+                           $"\nMessage: {ex.Message}" +
+                           $"\nStack Trace:\n{ex.StackTrace}";
+                if (ex.InnerException != null)
+                {
+                    logEntry += $"\nInner Exception: {ex.InnerException.GetType().FullName}" +
+                               $"\nInner Message: {ex.InnerException.Message}" +
+                               $"\nInner Stack Trace:\n{ex.InnerException.StackTrace}";
+                }
+            }
+            File.AppendAllText(logFilePath, logEntry + Environment.NewLine + Environment.NewLine);
         }
 
         public async void Start(Outlook.MAPIFolder sourceFolder, string storeName, bool isMoveOperation, double monthsOld)
@@ -94,14 +106,13 @@ namespace OutBack
 
                                     if (item.Permission != Outlook.OlPermission.olUnrestricted)
                                     {
-                                        skippedItems++;  // Increment skipped items count
+                                        skippedItems++;
                                         continue;
                                     }
 
-                                    // Check if the item is older than or equal to the cutoff date
                                     if (monthsOld > 0 && item.ReceivedTime > cutoffDate)
                                     {
-                                        skippedItems++;  // Increment skipped items count
+                                        skippedItems++;
                                         continue;
                                     }
 
@@ -117,9 +128,9 @@ namespace OutBack
                                 }
                                 catch (Exception ex)
                                 {
-                                    lastError = ex.Message;
+                                    lastError = $"Error: {ex.GetType().Name}\nMessage: {ex.Message}\nStack Trace:\n{ex.StackTrace}";
                                     errorItems++;
-                                    Log($"Error processing item {i}: {ex.Message}");
+                                    Log($"Error processing item {i}", ex);
                                     if (ex.Message == "Cannot move the items")
                                         break;
                                 }
@@ -162,8 +173,14 @@ namespace OutBack
             }
             catch (Exception ex)
             {
-                string errorMessage = $"An error occurred: {ex.Message}";
-                Log(errorMessage);
+                string errorMessage = $"An error occurred:\nType: {ex.GetType().Name}\nMessage: {ex.Message}\nStack Trace:\n{ex.StackTrace}";
+                if (ex.InnerException != null)
+                {
+                    errorMessage += $"\n\nInner Exception:\nType: {ex.InnerException.GetType().Name}" +
+                                  $"\nMessage: {ex.InnerException.Message}" +
+                                  $"\nStack Trace:\n{ex.InnerException.StackTrace}";
+                }
+                Log("Operation failed", ex);
                 MessageBox.Show(errorMessage, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             finally
@@ -218,7 +235,7 @@ namespace OutBack
 
                 foreach (string part in pathParts)
                 {
-                
+
                     Outlook.Folder subFolder = null;
                     try
                     {
