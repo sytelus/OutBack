@@ -63,8 +63,9 @@ namespace OutBack
                 int skipForCast = 0;   // New counter for skipped items due to cast
                 int skipForPermission = 0; // New counter for skipped items due to permission
                 int skipForDate = 0; // New counter for skipped items due to date
-                int retries = -1;
+                int retries = 0;
                 int errorItems = 0;
+                var sourceItems = new List<object>();
 
                 using (ProgressForm progressForm = new ProgressForm(sourceFolder.FolderPath, destFolder.FolderPath))
                 {
@@ -82,9 +83,14 @@ namespace OutBack
                         // Refresh the total count before each retry
                         Log($"Retry {retries}: Total items count = {sourceFolder.Items.Count}");
 
+                        for (int i = 1; i <= sourceFolder.Items.Count; i++)
+                        {
+                            sourceItems.Add(sourceFolder.Items[i]);
+                        }
+
                         await Task.Run(() =>
                         {
-                            foreach (var item in sourceFolder.Items)
+                            foreach (var item in sourceItems)
                             {
                                 if (isCancelled) break;
 
@@ -96,41 +102,17 @@ namespace OutBack
                                     GC.WaitForPendingFinalizers();
                                 }
 
-                                Outlook.MailItem movedItem = null;
-                                Outlook.MailItem copiedItem = null;
-
                                 try
                                 {
-                                    var mailItem = item as Outlook.MailItem;
-                                    if (mailItem == null)
+                                    var isProcessed = moveMailItem(item, isMoveOperation, monthsOld, destFolder, ref skippedItems, ref skipForCast, ref skipForPermission, ref skipForDate, cutoffDate);
+                                    if (!isProcessed)
+                                    {
+                                        isProcessed = moveCalItem(item, isMoveOperation, monthsOld, destFolder, ref skippedItems, ref skipForCast, ref skipForPermission, ref skipForDate, cutoffDate);
+                                    }
+                                    if (!isProcessed)
                                     {
                                         skippedItems++;
                                         skipForCast++;
-                                        continue;
-                                    }
-
-                                    if (mailItem.Permission != Outlook.OlPermission.olUnrestricted)
-                                    {
-                                        skippedItems++;
-                                        skipForPermission++;
-                                        continue;
-                                    }
-
-                                    if (monthsOld > 0 && mailItem.ReceivedTime > cutoffDate)
-                                    {
-                                        skippedItems++;
-                                        skipForDate++;
-                                        continue;
-                                    }
-
-                                    if (isMoveOperation)
-                                    {
-                                        movedItem = mailItem.Move(destFolder);
-                                    }
-                                    else
-                                    {
-                                        copiedItem = mailItem.Copy();
-                                        movedItem = copiedItem.Move(destFolder);
                                     }
                                 }
                                 catch (Exception ex)
@@ -143,9 +125,7 @@ namespace OutBack
                                 }
                                 finally
                                 {
-                                    if (item != null) Marshal.ReleaseComObject(item);
-                                    if (movedItem != null) Marshal.ReleaseComObject(movedItem);
-                                    if (copiedItem != null) Marshal.ReleaseComObject(copiedItem);
+                                    if(item != null) Marshal.ReleaseComObject(item);
 
                                     progressForm.Invoke(new Action(() =>
                                     {
@@ -165,7 +145,7 @@ namespace OutBack
                             }
                         });
                     }
-                    while (sourceFolder.Items.Count > 0 && retries < 4);
+                    while (sourceFolder.Items.Count > 0 && retries < 1);
 
                     stopwatch.Stop();
                     progressForm.Close();
@@ -198,6 +178,93 @@ namespace OutBack
                 if (pstStore != null) Marshal.ReleaseComObject(pstStore);
             }
         }
+
+        private static bool moveMailItem(object item, bool isMoveOperation, double monthsOld, Outlook.MAPIFolder destFolder, ref int skippedItems, ref int skipForCast, ref int skipForPermission, ref int skipForDate, DateTime cutoffDate)
+        {
+            var mailItem = item as Outlook.MailItem;
+            if (mailItem == null)
+            {
+                return false;
+            }
+
+            Outlook.MailItem movedItem = null;
+            Outlook.MailItem copiedItem = null;
+
+            try
+            {
+                if (mailItem.Permission != Outlook.OlPermission.olUnrestricted)
+                {
+                    skippedItems++;
+                    skipForPermission++;
+                    return true;
+                }
+
+                if (monthsOld > 0 && mailItem.ReceivedTime > cutoffDate)
+                {
+                    skippedItems++;
+                    skipForDate++;
+                    return true;
+                }
+
+                if (isMoveOperation)
+                {
+                    movedItem = mailItem.Move(destFolder);
+                }
+                else
+                {
+                    copiedItem = mailItem.Copy();
+                    movedItem = copiedItem.Move(destFolder);
+                }
+
+                return true;
+            }
+            finally
+            {
+                if (movedItem != null) Marshal.ReleaseComObject(movedItem);
+                if (copiedItem != null) Marshal.ReleaseComObject(copiedItem);
+            }
+
+        }
+
+        private static bool moveCalItem(object item, bool isMoveOperation, double monthsOld, Outlook.MAPIFolder destFolder, ref int skippedItems, ref int skipForCast, ref int skipForPermission, ref int skipForDate, DateTime cutoffDate)
+        {
+            var mailItem = item as Outlook.MeetingItem;
+            if (mailItem == null)
+            {
+                return false;
+            }
+
+            Outlook.MeetingItem movedItem = null;
+            Outlook.MeetingItem copiedItem = null;
+
+            try
+            {
+                if (monthsOld > 0 && mailItem.ReceivedTime > cutoffDate)
+                {
+                    skippedItems++;
+                    skipForDate++;
+                    return true;
+                }
+
+                if (isMoveOperation)
+                {
+                    movedItem = mailItem.Move(destFolder);
+                }
+                else
+                {
+                    copiedItem = mailItem.Copy();
+                    movedItem = copiedItem.Move(destFolder);
+                }
+
+                return true;
+            }
+            finally
+            {
+                if (movedItem != null) Marshal.ReleaseComObject(movedItem);
+                if (copiedItem != null) Marshal.ReleaseComObject(copiedItem);
+            }
+        }
+
 
         private Outlook.Store GetStoreByName(string storeName)
         {
