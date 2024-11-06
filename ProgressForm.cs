@@ -17,11 +17,19 @@ namespace OutBack
 
         public bool UpdateProgress(int processedItems, int totalItems, int errorItems, int skippedItems, string lastError, TimeSpan elapsedTime, int retryCount)
         {
-            progressBar.Value = (int)((double)processedItems / totalItems * 100);
+            int progressValue = Math.Min((int)((double)processedItems / totalItems * 100), 100);
+            progressBar.Value = progressValue;
+
             lblStatus.Text = $"Processed {processedItems} of {totalItems} items.";
             lblTimeElapsed.Text = $"Time Elapsed: {elapsedTime.ToString(@"hh\:mm\:ss")}";
-            TimeSpan estimatedRemaining = TimeSpan.FromTicks(elapsedTime.Ticks * (totalItems - processedItems) / processedItems);
+
+            TimeSpan estimatedRemaining = TimeSpan.Zero;
+            if (processedItems > 0)
+            {
+                estimatedRemaining = TimeSpan.FromTicks(elapsedTime.Ticks * (totalItems - processedItems) / processedItems);
+            }
             lblTimeRemaining.Text = $"Estimated Time Remaining: {estimatedRemaining.ToString(@"hh\:mm\:ss")}";
+
             labelErrorItems.Text = $"Error Items: {errorItems}";
             labelSkippedItems.Text = $"Skipped Items: {skippedItems}";
             labelRetries.Text = $"Retries: {retryCount}";
