@@ -20,6 +20,9 @@ namespace OutBack
             this.labelDestination = new System.Windows.Forms.Label();
             this.labelSkippedItems = new System.Windows.Forms.Label();
             this.labelRetries = new System.Windows.Forms.Label();
+            this.labelSkippedCast = new System.Windows.Forms.Label();
+            this.labelSkippedPermissions = new System.Windows.Forms.Label();
+            this.labelSkippedDate = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
             // progressBar
@@ -108,9 +111,9 @@ namespace OutBack
             this.labelSkippedItems.AutoSize = true;
             this.labelSkippedItems.Location = new System.Drawing.Point(12, 221);
             this.labelSkippedItems.Name = "labelSkippedItems";
-            this.labelSkippedItems.Size = new System.Drawing.Size(174, 20);
+            this.labelSkippedItems.Size = new System.Drawing.Size(169, 20);
             this.labelSkippedItems.TabIndex = 9;
-            this.labelSkippedItems.Text = "Skipped Items: 0 items.";
+            this.labelSkippedItems.Text = "Skipped Total: 0 items.";
             // 
             // labelRetries
             // 
@@ -121,9 +124,39 @@ namespace OutBack
             this.labelRetries.TabIndex = 10;
             this.labelRetries.Text = "Retries";
             // 
+            // labelSkippedCast
+            // 
+            this.labelSkippedCast.AutoSize = true;
+            this.labelSkippedCast.Location = new System.Drawing.Point(278, 221);
+            this.labelSkippedCast.Name = "labelSkippedCast";
+            this.labelSkippedCast.Size = new System.Drawing.Size(167, 20);
+            this.labelSkippedCast.TabIndex = 11;
+            this.labelSkippedCast.Text = "Skipped Cast: 0 items.";
+            // 
+            // labelSkippedPermissions
+            // 
+            this.labelSkippedPermissions.AutoSize = true;
+            this.labelSkippedPermissions.Location = new System.Drawing.Point(473, 221);
+            this.labelSkippedPermissions.Name = "labelSkippedPermissions";
+            this.labelSkippedPermissions.Size = new System.Drawing.Size(179, 20);
+            this.labelSkippedPermissions.TabIndex = 12;
+            this.labelSkippedPermissions.Text = "Skipped Perms: 0 items.";
+            // 
+            // labelSkippedDate
+            // 
+            this.labelSkippedDate.AutoSize = true;
+            this.labelSkippedDate.Location = new System.Drawing.Point(683, 221);
+            this.labelSkippedDate.Name = "labelSkippedDate";
+            this.labelSkippedDate.Size = new System.Drawing.Size(169, 20);
+            this.labelSkippedDate.TabIndex = 13;
+            this.labelSkippedDate.Text = "Skipped Date: 0 items.";
+            // 
             // ProgressForm
             // 
             this.ClientSize = new System.Drawing.Size(891, 802);
+            this.Controls.Add(this.labelSkippedDate);
+            this.Controls.Add(this.labelSkippedPermissions);
+            this.Controls.Add(this.labelSkippedCast);
             this.Controls.Add(this.labelRetries);
             this.Controls.Add(this.labelSkippedItems);
             this.Controls.Add(this.labelDestination);
@@ -149,5 +182,8 @@ namespace OutBack
         private System.Windows.Forms.Label labelDestination;
         private System.Windows.Forms.Label labelSkippedItems;
         private System.Windows.Forms.Label labelRetries;
+        private System.Windows.Forms.Label labelSkippedCast;
+        private System.Windows.Forms.Label labelSkippedPermissions;
+        private System.Windows.Forms.Label labelSkippedDate;
     }
 }

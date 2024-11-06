@@ -45,7 +45,6 @@ namespace OutBack
 
             Outlook.Store pstStore = null;
             Outlook.MAPIFolder destFolder = null;
-            Outlook.Items items = null;
 
             try
             {
@@ -59,9 +58,13 @@ namespace OutBack
                 destFolder = GetOrCreateFolder(pstStore, sourceFolder.FolderPath);
 
                 // Get all items in the source folder
-                items = sourceFolder.Items;
                 int processedItems = 0;
                 int skippedItems = 0;  // New counter for skipped items
+                int skipForCast = 0;   // New counter for skipped items due to cast
+                int skipForPermission = 0; // New counter for skipped items due to permission
+                int skipForDate = 0; // New counter for skipped items due to date
+                int retries = -1;
+                int errorItems = 0;
 
                 using (ProgressForm progressForm = new ProgressForm(sourceFolder.FolderPath, destFolder.FolderPath))
                 {
@@ -72,79 +75,71 @@ namespace OutBack
 
                     DateTime cutoffDate = DateTime.Now.AddMonths(-(int)Math.Floor(monthsOld));
 
-                    int errorItems;
-                    int retries = -1;
-                    int totalItems;
-                    processedItems = 0;
-                    skippedItems = 0;
-                    HashSet<int> processedIndices = new HashSet<int>();
-
                     do
                     {
-                        errorItems = 0;
                         retries++;
 
                         // Refresh the total count before each retry
-                        totalItems = items.Count;
-                        Log($"Retry {retries}: Total items count = {totalItems}");
+                        Log($"Retry {retries}: Total items count = {sourceFolder.Items.Count}");
 
                         await Task.Run(() =>
                         {
-                            for (int i = 1; i <= totalItems; i++)
+                            foreach (var item in sourceFolder.Items)
                             {
                                 if (isCancelled) break;
 
-                                // Skip if we've already processed this item successfully
-                                if (processedIndices.Contains(i)) continue;
+                                processedItems++;
 
-                                if ((i % BATCH_SIZE == 0) || (i == totalItems))
+                                if (processedItems % BATCH_SIZE == 0)
                                 {
                                     GC.Collect();
                                     GC.WaitForPendingFinalizers();
                                 }
 
-                                Outlook.MailItem item = null;
                                 Outlook.MailItem movedItem = null;
                                 Outlook.MailItem copiedItem = null;
 
                                 try
                                 {
-                                    item = items[i] as Outlook.MailItem;
-                                    if (item == null) continue;
-
-                                    if (item.Permission != Outlook.OlPermission.olUnrestricted)
+                                    var mailItem = item as Outlook.MailItem;
+                                    if (mailItem == null)
                                     {
                                         skippedItems++;
-                                        processedIndices.Add(i);  // Mark as processed
+                                        skipForCast++;
                                         continue;
                                     }
 
-                                    if (monthsOld > 0 && item.ReceivedTime > cutoffDate)
+                                    if (mailItem.Permission != Outlook.OlPermission.olUnrestricted)
                                     {
                                         skippedItems++;
-                                        processedIndices.Add(i);  // Mark as processed
+                                        skipForPermission++;
+                                        continue;
+                                    }
+
+                                    if (monthsOld > 0 && mailItem.ReceivedTime > cutoffDate)
+                                    {
+                                        skippedItems++;
+                                        skipForDate++;
                                         continue;
                                     }
 
                                     if (isMoveOperation)
                                     {
-                                        movedItem = item.Move(destFolder);
+                                        movedItem = mailItem.Move(destFolder);
                                     }
                                     else
                                     {
-                                        copiedItem = item.Copy();
+                                        copiedItem = mailItem.Copy();
                                         movedItem = copiedItem.Move(destFolder);
                                     }
-
-                                    processedIndices.Add(i);  // Mark as successfully processed
                                 }
                                 catch (Exception ex)
                                 {
                                     lastError = $"Error: {ex.GetType().Name}\nMessage: {ex.Message}\nStack Trace:\n{ex.StackTrace}";
                                     errorItems++;
-                                    Log($"Error processing item {i}", ex);
-                                    if (ex.Message == "Cannot move the items")
-                                        break;
+                                    Log($"Error processing item {processedItems}", ex);
+                                    //if (ex.Message == "Cannot move the items")
+                                    //    break;
                                 }
                                 finally
                                 {
@@ -152,21 +147,30 @@ namespace OutBack
                                     if (movedItem != null) Marshal.ReleaseComObject(movedItem);
                                     if (copiedItem != null) Marshal.ReleaseComObject(copiedItem);
 
-                                    processedItems = processedIndices.Count;
                                     progressForm.Invoke(new Action(() =>
                                     {
-                                        isCancelled = progressForm.UpdateProgress(processedItems, totalItems, errorItems, skippedItems, lastError, stopwatch.Elapsed, retries);
+                                        isCancelled = progressForm.UpdateProgress(
+                                            processedItems,
+                                            processedItems + sourceFolder.Items.Count,
+                                            errorItems,
+                                            skippedItems,
+                                            skipForCast,
+                                            skipForPermission,
+                                            skipForDate,
+                                            lastError,
+                                            stopwatch.Elapsed,
+                                            retries);
                                     }));
                                 }
                             }
                         });
                     }
-                    while (errorItems > 0 && retries < 4);
+                    while (sourceFolder.Items.Count > 0 && retries < 4);
 
                     stopwatch.Stop();
                     progressForm.Close();
 
-                    string completionMessage = $"Operation completed: {processedItems}/{totalItems} processed, {errorItems} had errors, {skippedItems} skipped";
+                    string completionMessage = $"Operation completed: {processedItems}/{processedItems + sourceFolder.Items.Count} processed, {errorItems} had errors, {skippedItems} skipped";
                     Log(completionMessage);
                     Log($"Total time: {stopwatch.Elapsed}");
 
@@ -189,7 +193,6 @@ namespace OutBack
             finally
             {
                 // Clean up final objects
-                if (items != null) Marshal.ReleaseComObject(items);
                 if (destFolder != null) Marshal.ReleaseComObject(destFolder);
                 if (sourceFolder != null) Marshal.ReleaseComObject(sourceFolder);
                 if (pstStore != null) Marshal.ReleaseComObject(pstStore);

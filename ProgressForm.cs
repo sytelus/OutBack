@@ -15,7 +15,9 @@ namespace OutBack
             labelRetries.Text = "Retries: 0";
         }
 
-        public bool UpdateProgress(int processedItems, int totalItems, int errorItems, int skippedItems, string lastError, TimeSpan elapsedTime, int retryCount)
+        public bool UpdateProgress(int processedItems, int totalItems, int errorItems, int skippedItems,
+            int skipForCast, int skipForPermission, int skipForDate,
+            string lastError, TimeSpan elapsedTime, int retryCount)
         {
             int progressValue = Math.Min((int)((double)processedItems / totalItems * 100), 100);
             progressBar.Value = progressValue;
@@ -30,8 +32,11 @@ namespace OutBack
             }
             lblTimeRemaining.Text = $"Estimated Time Remaining: {estimatedRemaining.ToString(@"hh\:mm\:ss")}";
 
-            labelErrorItems.Text = $"Error Items: {errorItems}";
-            labelSkippedItems.Text = $"Skipped Items: {skippedItems}";
+            labelErrorItems.Text = $"Errors: {errorItems} items.";
+            labelSkippedItems.Text = $"Skipped Total: {skippedItems} items.";
+            labelSkippedCast.Text = $"Skipped Cast: {skipForCast} items.";
+            labelSkippedPermissions.Text = $"Skipped Perms: {skipForPermission} items.";
+            labelSkippedDate.Text = $"Skipped Date: {skipForDate} items.";
             labelRetries.Text = $"Retries: {retryCount}";
             if (!string.IsNullOrEmpty(lastError))
             {
