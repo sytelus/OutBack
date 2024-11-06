@@ -75,12 +75,18 @@ namespace OutBack
                     int errorItems;
                     int retries = -1;
                     int totalItems;
+                    processedItems = 0;
+                    skippedItems = 0;
+                    HashSet<int> processedIndices = new HashSet<int>();
 
                     do
                     {
-                        totalItems = items.Count;
                         errorItems = 0;
                         retries++;
+
+                        // Refresh the total count before each retry
+                        totalItems = items.Count;
+                        Log($"Retry {retries}: Total items count = {totalItems}");
 
                         await Task.Run(() =>
                         {
@@ -88,9 +94,11 @@ namespace OutBack
                             {
                                 if (isCancelled) break;
 
+                                // Skip if we've already processed this item successfully
+                                if (processedIndices.Contains(i)) continue;
+
                                 if ((i % BATCH_SIZE == 0) || (i == totalItems))
                                 {
-                                    // Force garbage collection periodically
                                     GC.Collect();
                                     GC.WaitForPendingFinalizers();
                                 }
@@ -107,12 +115,14 @@ namespace OutBack
                                     if (item.Permission != Outlook.OlPermission.olUnrestricted)
                                     {
                                         skippedItems++;
+                                        processedIndices.Add(i);  // Mark as processed
                                         continue;
                                     }
 
                                     if (monthsOld > 0 && item.ReceivedTime > cutoffDate)
                                     {
                                         skippedItems++;
+                                        processedIndices.Add(i);  // Mark as processed
                                         continue;
                                     }
 
@@ -125,6 +135,8 @@ namespace OutBack
                                         copiedItem = item.Copy();
                                         movedItem = copiedItem.Move(destFolder);
                                     }
+
+                                    processedIndices.Add(i);  // Mark as successfully processed
                                 }
                                 catch (Exception ex)
                                 {
@@ -136,20 +148,11 @@ namespace OutBack
                                 }
                                 finally
                                 {
-                                    if (item != null)
-                                    {
-                                        Marshal.ReleaseComObject(item);
-                                    }
-                                    if (movedItem != null)
-                                    {
-                                        Marshal.ReleaseComObject(movedItem);
-                                    }
-                                    if (copiedItem != null)
-                                    {
-                                        Marshal.ReleaseComObject(copiedItem);
-                                    }
+                                    if (item != null) Marshal.ReleaseComObject(item);
+                                    if (movedItem != null) Marshal.ReleaseComObject(movedItem);
+                                    if (copiedItem != null) Marshal.ReleaseComObject(copiedItem);
 
-                                    processedItems++;
+                                    processedItems = processedIndices.Count;
                                     progressForm.Invoke(new Action(() =>
                                     {
                                         isCancelled = progressForm.UpdateProgress(processedItems, totalItems, errorItems, skippedItems, lastError, stopwatch.Elapsed, retries);
