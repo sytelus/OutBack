@@ -111,6 +111,14 @@ namespace OutBack
                                     }
                                     if (!isProcessed)
                                     {
+                                        isProcessed = moveApptItem(item, isMoveOperation, monthsOld, destFolder, ref skippedItems, ref skipForCast, ref skipForPermission, ref skipForDate, cutoffDate);
+                                    }
+                                    if (!isProcessed)
+                                    {
+                                        isProcessed = moveContactItem(item, isMoveOperation, monthsOld, destFolder, ref skippedItems, ref skipForCast, ref skipForPermission, ref skipForDate, cutoffDate);
+                                    }
+                                    if (!isProcessed)
+                                    {
                                         skippedItems++;
                                         skipForCast++;
                                     }
@@ -225,6 +233,38 @@ namespace OutBack
             }
 
         }
+        private static bool moveApptItem(object item, bool isMoveOperation, double monthsOld, Outlook.MAPIFolder destFolder, ref int skippedItems, ref int skipForCast, ref int skipForPermission, ref int skipForDate, DateTime cutoffDate)
+        {
+            var mailItem = item as Outlook.AppointmentItem;
+            if (mailItem == null)
+            {
+                return false;
+            }
+
+            Outlook.AppointmentItem movedItem = null;
+            Outlook.AppointmentItem copiedItem = null;
+
+            try
+            {
+                if (isMoveOperation)
+                {
+                    movedItem = mailItem.Move(destFolder);
+                }
+                else
+                {
+                    copiedItem = mailItem.Copy();
+                    movedItem = copiedItem.Move(destFolder);
+                }
+
+                return true;
+            }
+            finally
+            {
+                if (movedItem != null) Marshal.ReleaseComObject(movedItem);
+                if (copiedItem != null) Marshal.ReleaseComObject(copiedItem);
+            }
+        }
+
 
         private static bool moveCalItem(object item, bool isMoveOperation, double monthsOld, Outlook.MAPIFolder destFolder, ref int skippedItems, ref int skipForCast, ref int skipForPermission, ref int skipForDate, DateTime cutoffDate)
         {
@@ -265,6 +305,37 @@ namespace OutBack
             }
         }
 
+        private static bool moveContactItem(object item, bool isMoveOperation, double monthsOld, Outlook.MAPIFolder destFolder, ref int skippedItems, ref int skipForCast, ref int skipForPermission, ref int skipForDate, DateTime cutoffDate)
+        {
+            var mailItem = item as Outlook.ContactItem;
+            if (mailItem == null)
+            {
+                return false;
+            }
+
+            Outlook.ContactItem movedItem = null;
+            Outlook.ContactItem copiedItem = null;
+
+            try
+            {
+                if (isMoveOperation)
+                {
+                    movedItem = mailItem.Move(destFolder);
+                }
+                else
+                {
+                    copiedItem = mailItem.Copy();
+                    movedItem = copiedItem.Move(destFolder);
+                }
+
+                return true;
+            }
+            finally
+            {
+                if (movedItem != null) Marshal.ReleaseComObject(movedItem);
+                if (copiedItem != null) Marshal.ReleaseComObject(copiedItem);
+            }
+        }
 
         private Outlook.Store GetStoreByName(string storeName)
         {
