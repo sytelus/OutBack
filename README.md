@@ -63,6 +63,63 @@ The Outlook PST Mover Add-in allows you to move or copy all items from the curre
    - A progress window will display the number of items processed, time elapsed, and estimated time remaining.
    - Upon completion, a success message will appear.
 
+## How to Debug
+
+This is a VSTO (Visual Studio Tools for Office) Outlook Add-in. Debugging requires Visual Studio to launch Outlook as the host application and attach its debugger.
+
+### Prerequisites
+
+- Visual Studio 2017 or later (Professional or higher recommended for full VSTO debugging support).
+- Microsoft Outlook installed locally.
+- The VSTO workload installed in Visual Studio (**Office/SharePoint development** workload via the Visual Studio Installer).
+
+### Starting a Debug Session
+
+1. Open `OutBack.sln` in Visual Studio.
+2. Ensure the **Debug** configuration is selected in the toolbar (not Release).
+3. Set breakpoints in any source file (e.g., `ItemMover.cs`, `MyRibbon.cs`, `PSTSelectionForm.cs`).
+4. Press **F5** (or **Debug > Start Debugging**).
+   - Visual Studio will build the add-in, register it temporarily, and launch Outlook automatically.
+   - The debugger attaches to the Outlook process, and your breakpoints will be hit when the corresponding code executes.
+
+### Useful Breakpoint Locations
+
+| File | Where to Break | Why |
+|------|----------------|-----|
+| `MyRibbon.cs` | Button click handler | Entry point when the user clicks **Move/Copy to PST** |
+| `PSTSelectionForm.cs` | Form load / Start button | Inspect user-selected options before the operation begins |
+| `ItemMover.cs` | Move/copy loop | Step through individual item processing |
+| `ProgressForm.cs` | Progress update calls | Verify progress tracking and ETA calculations |
+| `ThisAddIn.cs` | `ThisAddIn_Startup` | Verify the add-in initializes correctly |
+
+### Debugging Techniques
+
+- **Breakpoints (F9):** Click the left margin of a code line or press F9 to toggle a breakpoint. Execution will pause when that line is reached.
+- **Conditional Breakpoints:** Right-click a breakpoint and choose **Conditions** to break only when a specific expression is true (e.g., `itemIndex > 100`).
+- **Watch & Locals Windows:** Use **Debug > Windows > Watch** or **Locals** to inspect variable values while paused at a breakpoint.
+- **Immediate Window (Ctrl+Alt+I):** Evaluate expressions and call methods at runtime while paused.
+- **Output Window:** View debug trace messages in **View > Output** (select **Debug** in the "Show output from" dropdown).
+- **Exception Settings (Ctrl+Alt+E):** Configure which exceptions break into the debugger. Enable **Common Language Runtime Exceptions** to catch all managed exceptions.
+
+### Debugging COM / Outlook Interop Issues
+
+- If Outlook items throw `COMException` or `RPC_E_CALL_REJECTED` errors, these are common in Office interop. Set the debugger to break on `System.Runtime.InteropServices.COMException` via **Debug > Windows > Exception Settings**.
+- Use the **Immediate Window** to inspect Outlook object properties (e.g., `item.Subject`, `item.MessageClass`) while paused.
+
+### Stopping a Debug Session
+
+- Press **Shift+F5** (or **Debug > Stop Debugging**) to end the session. Visual Studio will close Outlook and unregister the temporary add-in.
+- Alternatively, closing Outlook manually will also end the debug session.
+
+### Troubleshooting
+
+| Problem | Solution |
+|---------|----------|
+| Outlook does not launch on F5 | Verify Outlook is installed and the `OfficeApplication` property in the `.csproj` is set to `Outlook`. Check **Tools > Options > Office Tools > Project Debugging** settings. |
+| Breakpoints show "No symbols loaded" | Ensure you are using the **Debug** configuration. Do a **Build > Clean Solution** followed by **Build > Rebuild Solution**. |
+| Add-in does not appear in Outlook | Check **File > Options > Add-ins** in Outlook. If it is listed under **Disabled**, re-enable it. Also verify VSTO Runtime 4.0 is installed. |
+| "The assembly could not be loaded" error | Run Visual Studio as Administrator, or re-sign the manifest by right-clicking the project > **Properties > Signing**. |
+
 ## Handling Errors
 
 - The add-in is designed to skip items that cannot be moved or copied.
