@@ -1,7 +1,6 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using Outlook = Microsoft.Office.Interop.Outlook;
 using System.IO;
@@ -39,12 +38,13 @@ namespace OutBack
             File.AppendAllText(logFilePath, logEntry + Environment.NewLine + Environment.NewLine);
         }
 
-        public async void Start(Outlook.MAPIFolder sourceFolder, string storeName, bool isMoveOperation, double monthsOld)
+        public void Start(Outlook.MAPIFolder sourceFolder, string storeName, bool isMoveOperation, double monthsOld)
         {
             Log($"Operation started: Source={sourceFolder.FolderPath}, Store={storeName}, Move={isMoveOperation}, MonthsOld={monthsOld}");
 
             Outlook.Store pstStore = null;
             Outlook.MAPIFolder destFolder = null;
+            Outlook.Items sourceItems = null;
 
             try
             {
@@ -57,15 +57,15 @@ namespace OutBack
                 // Get or create the destination folder
                 destFolder = GetOrCreateFolder(pstStore, sourceFolder.FolderPath);
 
-                // Get all items in the source folder
+                sourceItems = sourceFolder.Items;
+                int totalItems = sourceItems.Count;
                 int processedItems = 0;
-                int skippedItems = 0;  // New counter for skipped items
-                int skipForCast = 0;   // New counter for skipped items due to cast
-                int skipForPermission = 0; // New counter for skipped items due to permission
-                int skipForDate = 0; // New counter for skipped items due to date
-                int retries = 0;
+                int skippedItems = 0;
+                int skipForCast = 0;
+                int skipForPermission = 0;
+                int skipForDate = 0;
                 int errorItems = 0;
-                var sourceItems = new List<object>();
+                int retries = 1;
 
                 using (ProgressForm progressForm = new ProgressForm(sourceFolder.FolderPath, destFolder.FolderPath))
                 {
@@ -76,89 +76,72 @@ namespace OutBack
 
                     DateTime cutoffDate = DateTime.Now.AddMonths(-(int)Math.Floor(monthsOld));
 
-                    do
+                    Log($"Retry {retries}: Total items count = {totalItems}");
+
+                    for (int i = totalItems; i >= 1; i--)
                     {
-                        retries++;
+                        if (isCancelled) break;
 
-                        // Refresh the total count before each retry
-                        Log($"Retry {retries}: Total items count = {sourceFolder.Items.Count}");
+                        object item = null;
+                        processedItems++;
 
-                        for (int i = 1; i <= sourceFolder.Items.Count; i++)
+                        try
                         {
-                            sourceItems.Add(sourceFolder.Items[i]);
-                        }
+                            item = sourceItems[i];
 
-                        await Task.Run(() =>
-                        {
-                            foreach (var item in sourceItems)
+                            var isProcessed = moveMailItem(item, isMoveOperation, monthsOld, destFolder, ref skippedItems, ref skipForCast, ref skipForPermission, ref skipForDate, cutoffDate);
+                            if (!isProcessed)
                             {
-                                if (isCancelled) break;
-
-                                processedItems++;
-
-                                if (processedItems % BATCH_SIZE == 0)
-                                {
-                                    GC.Collect();
-                                    GC.WaitForPendingFinalizers();
-                                }
-
-                                try
-                                {
-                                    var isProcessed = moveMailItem(item, isMoveOperation, monthsOld, destFolder, ref skippedItems, ref skipForCast, ref skipForPermission, ref skipForDate, cutoffDate);
-                                    if (!isProcessed)
-                                    {
-                                        isProcessed = moveCalItem(item, isMoveOperation, monthsOld, destFolder, ref skippedItems, ref skipForCast, ref skipForPermission, ref skipForDate, cutoffDate);
-                                    }
-                                    if (!isProcessed)
-                                    {
-                                        isProcessed = moveApptItem(item, isMoveOperation, monthsOld, destFolder, ref skippedItems, ref skipForCast, ref skipForPermission, ref skipForDate, cutoffDate);
-                                    }
-                                    if (!isProcessed)
-                                    {
-                                        isProcessed = moveContactItem(item, isMoveOperation, monthsOld, destFolder, ref skippedItems, ref skipForCast, ref skipForPermission, ref skipForDate, cutoffDate);
-                                    }
-                                    if (!isProcessed)
-                                    {
-                                        skippedItems++;
-                                        skipForCast++;
-                                    }
-                                }
-                                catch (Exception ex)
-                                {
-                                    lastError = $"Error: {ex.GetType().Name}\nMessage: {ex.Message}\nStack Trace:\n{ex.StackTrace}";
-                                    errorItems++;
-                                    Log($"Error processing item {processedItems}", ex);
-                                    //if (ex.Message == "Cannot move the items")
-                                    //    break;
-                                }
-                                finally
-                                {
-                                    if(item != null) Marshal.ReleaseComObject(item);
-
-                                    progressForm.Invoke(new Action(() =>
-                                    {
-                                        isCancelled = progressForm.UpdateProgress(
-                                            processedItems,
-                                            processedItems + sourceFolder.Items.Count,
-                                            errorItems,
-                                            skippedItems,
-                                            skipForCast,
-                                            skipForPermission,
-                                            skipForDate,
-                                            lastError,
-                                            stopwatch.Elapsed,
-                                            retries);
-                                    }));
-                                }
+                                isProcessed = moveCalItem(item, isMoveOperation, monthsOld, destFolder, ref skippedItems, ref skipForCast, ref skipForPermission, ref skipForDate, cutoffDate);
                             }
-                        });
+                            if (!isProcessed)
+                            {
+                                isProcessed = moveApptItem(item, isMoveOperation, monthsOld, destFolder, ref skippedItems, ref skipForCast, ref skipForPermission, ref skipForDate, cutoffDate);
+                            }
+                            if (!isProcessed)
+                            {
+                                isProcessed = moveContactItem(item, isMoveOperation, monthsOld, destFolder, ref skippedItems, ref skipForCast, ref skipForPermission, ref skipForDate, cutoffDate);
+                            }
+                            if (!isProcessed)
+                            {
+                                skippedItems++;
+                                skipForCast++;
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            lastError = $"Error: {ex.GetType().Name}\nMessage: {ex.Message}\nStack Trace:\n{ex.StackTrace}";
+                            errorItems++;
+                            Log($"Error processing item {processedItems}", ex);
+                        }
+                        finally
+                        {
+                            if (item != null) Marshal.ReleaseComObject(item);
+
+                            isCancelled = progressForm.UpdateProgress(
+                                processedItems,
+                                totalItems,
+                                errorItems,
+                                skippedItems,
+                                skipForCast,
+                                skipForPermission,
+                                skipForDate,
+                                lastError,
+                                stopwatch.Elapsed,
+                                retries);
+
+                            if (processedItems % BATCH_SIZE == 0)
+                            {
+                                GC.Collect();
+                                GC.WaitForPendingFinalizers();
+                            }
+                        }
                     }
-                    while (sourceFolder.Items.Count > 0 && retries < 1);
 
                     stopwatch.Stop();
                     progressForm.Close();
 
-                    string completionMessage = $"Operation completed: {processedItems}/{processedItems + sourceFolder.Items.Count} processed, {errorItems} had errors, {skippedItems} skipped";
+                    string completionMessage = $"Operation completed: {processedItems}/{totalItems} processed, {errorItems} had errors, {skippedItems} skipped";
                     Log(completionMessage);
                     Log($"Total time: {stopwatch.Elapsed}");
 
@@ -181,6 +164,7 @@ namespace OutBack
             finally
             {
                 // Clean up final objects
+                if (sourceItems != null) Marshal.ReleaseComObject(sourceItems);
                 if (destFolder != null) Marshal.ReleaseComObject(destFolder);
                 if (sourceFolder != null) Marshal.ReleaseComObject(sourceFolder);
                 if (pstStore != null) Marshal.ReleaseComObject(pstStore);

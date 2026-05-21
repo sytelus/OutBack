@@ -289,10 +289,7 @@
     <SignManifests>true</SignManifests>
   </PropertyGroup>
   <PropertyGroup>
-    <ManifestKeyFile>OutBack_1_TemporaryKey.pfx</ManifestKeyFile>
-  </PropertyGroup>
-  <PropertyGroup>
-    <ManifestCertificateThumbprint>6904F84C17DE50680418DD4AFA1C5C5CD772226D</ManifestCertificateThumbprint>
+    <ManifestCertificateThumbprint>6F68294F09B6798801669722BA909873071148DD</ManifestCertificateThumbprint>
   </PropertyGroup>
   <!-- Include the build rules for a C# project. -->
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
