@@ -40,7 +40,7 @@ namespace OutBack
             labelRetries.Text = $"Retries: {retryCount}";
             if (!string.IsNullOrEmpty(lastError))
             {
-                labelLastError.Text = $"Last Error: '{lastError}'";
+                txtLastError.Text = lastError;
             }
             Application.DoEvents();
             return isCancelled;

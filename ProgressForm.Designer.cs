@@ -15,6 +15,7 @@ namespace OutBack
             this.lblTimeRemaining = new System.Windows.Forms.Label();
             this.labelErrorItems = new System.Windows.Forms.Label();
             this.labelLastError = new System.Windows.Forms.Label();
+            this.txtLastError = new System.Windows.Forms.TextBox();
             this.buttonCancel = new System.Windows.Forms.Button();
             this.labelSource = new System.Windows.Forms.Label();
             this.labelDestination = new System.Windows.Forms.Label();
@@ -73,9 +74,23 @@ namespace OutBack
             this.labelLastError.AutoSize = true;
             this.labelLastError.Location = new System.Drawing.Point(11, 341);
             this.labelLastError.Name = "labelLastError";
-            this.labelLastError.Size = new System.Drawing.Size(82, 40);
+            this.labelLastError.Size = new System.Drawing.Size(76, 20);
             this.labelLastError.TabIndex = 5;
-            this.labelLastError.Text = "Error\r\nMessages\r\n";
+            this.labelLastError.Text = "Last Error";
+            //
+            // txtLastError
+            //
+            this.txtLastError.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
+            | System.Windows.Forms.AnchorStyles.Left)
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.txtLastError.Location = new System.Drawing.Point(15, 364);
+            this.txtLastError.Multiline = true;
+            this.txtLastError.Name = "txtLastError";
+            this.txtLastError.ReadOnly = true;
+            this.txtLastError.ScrollBars = System.Windows.Forms.ScrollBars.Both;
+            this.txtLastError.Size = new System.Drawing.Size(850, 405);
+            this.txtLastError.TabIndex = 14;
+            this.txtLastError.WordWrap = false;
             // 
             // buttonCancel
             // 
@@ -163,6 +178,7 @@ namespace OutBack
             this.Controls.Add(this.labelSource);
             this.Controls.Add(this.buttonCancel);
             this.Controls.Add(this.labelLastError);
+            this.Controls.Add(this.txtLastError);
             this.Controls.Add(this.labelErrorItems);
             this.Controls.Add(this.lblTimeRemaining);
             this.Controls.Add(this.lblTimeElapsed);
@@ -177,6 +193,7 @@ namespace OutBack
 
         private System.Windows.Forms.Label labelErrorItems;
         private System.Windows.Forms.Label labelLastError;
+        private System.Windows.Forms.TextBox txtLastError;
         private System.Windows.Forms.Button buttonCancel;
         private System.Windows.Forms.Label labelSource;
         private System.Windows.Forms.Label labelDestination;
