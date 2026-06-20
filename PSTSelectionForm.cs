@@ -33,12 +33,13 @@ namespace OutBack
         public bool IsMoveOperation { get; private set; }
         public double MonthsOld { get; private set; }
         public List<FolderSelection> SelectedSourceFolders { get; private set; }
+        private bool isLoadingFolders;
 
         public PSTSelectionForm()
         {
             InitializeComponent();
             SelectedSourceFolders = new List<FolderSelection>();
-            PopulateStoreComboBox();
+            SetFolderLoadingState(true, "Loading Outlook folders...");
         }
 
         private void PopulateStoreComboBox()
@@ -46,6 +47,7 @@ namespace OutBack
             Outlook.Stores stores = null;
             try
             {
+                cboStores.Items.Clear();
                 stores = Globals.ThisAddIn.Application.Session.Stores;
                 foreach (Outlook.Store store in stores)
                 {
@@ -68,33 +70,45 @@ namespace OutBack
 
         private void PopulateSourceFolderList()
         {
+            Outlook.Explorer explorer = null;
             Outlook.MAPIFolder currentFolder = null;
             Outlook.Store sourceStore = null;
             Outlook.MAPIFolder rootFolder = null;
             Outlook.Folders folders = null;
 
             checkedListFolders.Items.Clear();
+            SetFolderLoadingState(true, "Loading Outlook folders...");
+            Application.DoEvents();
 
             try
             {
-                currentFolder = Globals.ThisAddIn.Application.ActiveExplorer().CurrentFolder;
+                explorer = Globals.ThisAddIn.Application.ActiveExplorer();
+                currentFolder = explorer.CurrentFolder;
                 labelSourceFolder.Text = currentFolder.FolderPath;
 
                 sourceStore = currentFolder.Store;
                 rootFolder = sourceStore.GetRootFolder() as Outlook.MAPIFolder;
                 folders = rootFolder.Folders;
+                int totalFolders = folders.Count;
+                SetFolderLoadProgress(0, totalFolders);
 
-                foreach (Outlook.MAPIFolder folder in folders)
+                for (int index = 1; index <= totalFolders; index++)
                 {
+                    Outlook.MAPIFolder folder = null;
                     try
                     {
+                        folder = folders[index] as Outlook.MAPIFolder;
+                        if (folder == null)
+                            continue;
+
                         var selection = new FolderSelection(
                             folder.Name,
                             folder.FolderPath,
                             folder.EntryID,
                             folder.StoreID);
 
-                        checkedListFolders.Items.Add(selection, true);
+                        checkedListFolders.Items.Add(selection, IsCurrentFolderSelection(currentFolder.FolderPath, folder.FolderPath));
+                        SetFolderLoadProgress(index, totalFolders);
                     }
                     finally
                     {
@@ -113,11 +127,28 @@ namespace OutBack
                     Marshal.ReleaseComObject(sourceStore);
                 if (currentFolder != null)
                     Marshal.ReleaseComObject(currentFolder);
+                if (explorer != null)
+                    Marshal.ReleaseComObject(explorer);
             }
+        }
+
+        private static bool IsCurrentFolderSelection(string currentFolderPath, string topLevelFolderPath)
+        {
+            if (string.IsNullOrEmpty(currentFolderPath) || string.IsNullOrEmpty(topLevelFolderPath))
+                return false;
+
+            return string.Equals(currentFolderPath, topLevelFolderPath, StringComparison.OrdinalIgnoreCase) ||
+                currentFolderPath.StartsWith(topLevelFolderPath + "\\", StringComparison.OrdinalIgnoreCase);
         }
 
         private void btnOK_Click(object sender, EventArgs e)
         {
+            if (isLoadingFolders)
+            {
+                MessageBox.Show("Please wait for the source folder list to finish loading.", "Loading folders", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
             if (cboStores.SelectedItem == null)
             {
                 MessageBox.Show("Please select a PST file.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -158,9 +189,63 @@ namespace OutBack
             this.Close();
         }
 
-        private void PSTSelectionForm_Load(object sender, EventArgs e)
+        private void PSTSelectionForm_Shown(object sender, EventArgs e)
         {
-            PopulateSourceFolderList();
+            BeginInvoke(new Action(LoadOutlookSelections));
+        }
+
+        private void LoadOutlookSelections()
+        {
+            try
+            {
+                PopulateStoreComboBox();
+                PopulateSourceFolderList();
+                SetFolderLoadingState(false, $"{checkedListFolders.Items.Count} source folder(s) loaded.");
+            }
+            catch (Exception ex)
+            {
+                SetFolderLoadingState(false, "Unable to load source folders.");
+                MessageBox.Show($"Unable to load Outlook folders:\n{ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void btnSelectAll_Click(object sender, EventArgs e)
+        {
+            SetAllSourceFolders(true);
+        }
+
+        private void btnSelectNone_Click(object sender, EventArgs e)
+        {
+            SetAllSourceFolders(false);
+        }
+
+        private void SetAllSourceFolders(bool isChecked)
+        {
+            for (int i = 0; i < checkedListFolders.Items.Count; i++)
+                checkedListFolders.SetItemChecked(i, isChecked);
+        }
+
+        private void SetFolderLoadingState(bool isLoading, string statusText)
+        {
+            isLoadingFolders = isLoading;
+            checkedListFolders.Enabled = !isLoading;
+            btnSelectAll.Enabled = !isLoading && checkedListFolders.Items.Count > 0;
+            btnSelectNone.Enabled = !isLoading && checkedListFolders.Items.Count > 0;
+            btnOK.Enabled = !isLoading;
+            btnCancel.Enabled = !isLoading;
+            progressFolders.Visible = isLoading;
+            progressFolders.Style = isLoading ? ProgressBarStyle.Marquee : ProgressBarStyle.Blocks;
+            labelFolderLoadStatus.Text = statusText;
+            Cursor = isLoading ? Cursors.WaitCursor : Cursors.Default;
+        }
+
+        private void SetFolderLoadProgress(int loadedFolders, int totalFolders)
+        {
+            progressFolders.Style = ProgressBarStyle.Blocks;
+            progressFolders.Maximum = Math.Max(totalFolders, 1);
+            progressFolders.Value = Math.Min(loadedFolders, progressFolders.Maximum);
+            labelFolderLoadStatus.Text = $"Loading source folders ({loadedFolders}/{totalFolders})...";
+            Application.DoEvents();
         }
     }
 }

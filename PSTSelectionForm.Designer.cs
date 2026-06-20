@@ -11,6 +11,10 @@ namespace OutBack
         private System.Windows.Forms.TextBox txtMonthsOld;
         private System.Windows.Forms.Label lblSourceFolders;
         private System.Windows.Forms.CheckedListBox checkedListFolders;
+        private System.Windows.Forms.Button btnSelectAll;
+        private System.Windows.Forms.Button btnSelectNone;
+        private System.Windows.Forms.ProgressBar progressFolders;
+        private System.Windows.Forms.Label labelFolderLoadStatus;
 
         private void InitializeComponent()
         {
@@ -25,6 +29,10 @@ namespace OutBack
             this.txtMonthsOld = new System.Windows.Forms.TextBox();
             this.lblSourceFolders = new System.Windows.Forms.Label();
             this.checkedListFolders = new System.Windows.Forms.CheckedListBox();
+            this.btnSelectAll = new System.Windows.Forms.Button();
+            this.btnSelectNone = new System.Windows.Forms.Button();
+            this.progressFolders = new System.Windows.Forms.ProgressBar();
+            this.labelFolderLoadStatus = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
             // lblPstFile
@@ -59,7 +67,7 @@ namespace OutBack
             // 
             // btnOK
             // 
-            this.btnOK.Location = new System.Drawing.Point(306, 437);
+            this.btnOK.Location = new System.Drawing.Point(306, 477);
             this.btnOK.Name = "btnOK";
             this.btnOK.Size = new System.Drawing.Size(98, 39);
             this.btnOK.TabIndex = 4;
@@ -69,7 +77,7 @@ namespace OutBack
             // 
             // btnCancel
             // 
-            this.btnCancel.Location = new System.Drawing.Point(410, 437);
+            this.btnCancel.Location = new System.Drawing.Point(410, 477);
             this.btnCancel.Name = "btnCancel";
             this.btnCancel.Size = new System.Drawing.Size(100, 39);
             this.btnCancel.TabIndex = 5;
@@ -88,12 +96,15 @@ namespace OutBack
             // 
             // labelSourceFolder
             // 
-            this.labelSourceFolder.AutoSize = true;
+            this.labelSourceFolder.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.labelSourceFolder.AutoEllipsis = true;
+            this.labelSourceFolder.AutoSize = false;
             this.labelSourceFolder.Location = new System.Drawing.Point(96, 119);
             this.labelSourceFolder.Name = "labelSourceFolder";
-            this.labelSourceFolder.Size = new System.Drawing.Size(51, 20);
+            this.labelSourceFolder.Size = new System.Drawing.Size(414, 24);
             this.labelSourceFolder.TabIndex = 7;
-            this.labelSourceFolder.Text = "label2";
+            this.labelSourceFolder.Text = "Loading...";
             // 
             // lblMonthsOld
             // 
@@ -121,6 +132,28 @@ namespace OutBack
             this.lblSourceFolders.TabIndex = 10;
             this.lblSourceFolders.Text = "Source folders:";
             //
+            // btnSelectAll
+            //
+            this.btnSelectAll.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnSelectAll.Location = new System.Drawing.Point(306, 145);
+            this.btnSelectAll.Name = "btnSelectAll";
+            this.btnSelectAll.Size = new System.Drawing.Size(98, 29);
+            this.btnSelectAll.TabIndex = 11;
+            this.btnSelectAll.Text = "Select all";
+            this.btnSelectAll.UseVisualStyleBackColor = true;
+            this.btnSelectAll.Click += new System.EventHandler(this.btnSelectAll_Click);
+            //
+            // btnSelectNone
+            //
+            this.btnSelectNone.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnSelectNone.Location = new System.Drawing.Point(410, 145);
+            this.btnSelectNone.Name = "btnSelectNone";
+            this.btnSelectNone.Size = new System.Drawing.Size(100, 29);
+            this.btnSelectNone.TabIndex = 12;
+            this.btnSelectNone.Text = "Select none";
+            this.btnSelectNone.UseVisualStyleBackColor = true;
+            this.btnSelectNone.Click += new System.EventHandler(this.btnSelectNone_Click);
+            //
             // checkedListFolders
             //
             this.checkedListFolders.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
@@ -130,12 +163,37 @@ namespace OutBack
             this.checkedListFolders.Location = new System.Drawing.Point(16, 178);
             this.checkedListFolders.Name = "checkedListFolders";
             this.checkedListFolders.Size = new System.Drawing.Size(494, 235);
-            this.checkedListFolders.TabIndex = 11;
+            this.checkedListFolders.TabIndex = 13;
+            //
+            // progressFolders
+            //
+            this.progressFolders.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.progressFolders.Location = new System.Drawing.Point(16, 421);
+            this.progressFolders.Name = "progressFolders";
+            this.progressFolders.Size = new System.Drawing.Size(494, 12);
+            this.progressFolders.Style = System.Windows.Forms.ProgressBarStyle.Marquee;
+            this.progressFolders.TabIndex = 14;
+            //
+            // labelFolderLoadStatus
+            //
+            this.labelFolderLoadStatus.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.labelFolderLoadStatus.AutoEllipsis = true;
+            this.labelFolderLoadStatus.Location = new System.Drawing.Point(16, 440);
+            this.labelFolderLoadStatus.Name = "labelFolderLoadStatus";
+            this.labelFolderLoadStatus.Size = new System.Drawing.Size(494, 24);
+            this.labelFolderLoadStatus.TabIndex = 15;
+            this.labelFolderLoadStatus.Text = "Loading Outlook folders...";
             //
             // PSTSelectionForm
             // 
-            this.ClientSize = new System.Drawing.Size(522, 490);
+            this.ClientSize = new System.Drawing.Size(522, 530);
+            this.Controls.Add(this.labelFolderLoadStatus);
+            this.Controls.Add(this.progressFolders);
             this.Controls.Add(this.checkedListFolders);
+            this.Controls.Add(this.btnSelectNone);
+            this.Controls.Add(this.btnSelectAll);
             this.Controls.Add(this.lblSourceFolders);
             this.Controls.Add(this.txtMonthsOld);
             this.Controls.Add(this.lblMonthsOld);
@@ -148,7 +206,7 @@ namespace OutBack
             this.Controls.Add(this.lblPstFile);
             this.Name = "PSTSelectionForm";
             this.Text = "Select PST File";
-            this.Load += new System.EventHandler(this.PSTSelectionForm_Load);
+            this.Shown += new System.EventHandler(this.PSTSelectionForm_Shown);
             this.ResumeLayout(false);
             this.PerformLayout();
 
