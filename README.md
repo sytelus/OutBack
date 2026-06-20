@@ -6,8 +6,11 @@ The Outlook PST Mover Add-in allows you to move or copy all items from the curre
 
 ## Features
 
-- Move or copy items from the current folder to a PST file.
+- Move or copy items from selected top-level folders to a PST file.
 - Automatically creates the destination folder structure in the PST file.
+- Skips source items when the destination already has an equally current copy; in move mode, skipped source items are left in place.
+- Replaces older destination copies only after the source item has been written successfully, preventing duplicate copies without risking the existing destination item.
+- Exports Calendar items to an iCalendar (`.ics`) file with category, appointment/meeting, and organizer filters.
 - Handles items that cannot be moved or copied by skipping them.
 - Ensures all items are fully downloaded before processing.
 - Displays a progress bar with statistics:
@@ -54,7 +57,7 @@ The Outlook PST Mover Add-in allows you to move or copy all items from the curre
 
 4. **Configure Options**
 
-   - In the dialog that appears, click **Browse...** to select or create a PST file.
+   - In the dialog that appears, select a PST file and choose the source folders to process.
    - Check the **Move Items** checkbox if you wish to move items. Leave it unchecked to copy items.
    - Click **Start** to begin the operation.
 

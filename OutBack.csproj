@@ -212,6 +212,13 @@
     can be found.
   -->
   <ItemGroup>
+    <Compile Include="CalendarExporter.cs" />
+    <Compile Include="CalendarExportForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="CalendarExportForm.Designer.cs">
+      <DependentUpon>CalendarExportForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="ItemMover.cs" />
     <Compile Include="MyRibbon.cs">
       <SubType>Component</SubType>

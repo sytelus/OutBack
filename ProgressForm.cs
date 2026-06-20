@@ -15,11 +15,18 @@ namespace OutBack
             labelRetries.Text = "Retries: 0";
         }
 
+        public void SetCurrentFolders(string sourceFolder, string destinationFolder)
+        {
+            labelSource.Text = $"Source: {sourceFolder}";
+            labelDestination.Text = $"Destination: {destinationFolder}";
+            Application.DoEvents();
+        }
+
         public bool UpdateProgress(int processedItems, int totalItems, int errorItems, int skippedItems,
-            int skipForCast, int skipForPermission, int skipForDate,
+            int skipForCast, int skipForPermission, int skipForDate, int skipForExisting, int replacedExisting,
             string lastError, TimeSpan elapsedTime, int retryCount)
         {
-            int progressValue = Math.Min((int)((double)processedItems / totalItems * 100), 100);
+            int progressValue = totalItems <= 0 ? 100 : Math.Min((int)((double)processedItems / totalItems * 100), 100);
             progressBar.Value = progressValue;
 
             lblStatus.Text = $"Processed {processedItems} of {totalItems} items.";
@@ -37,6 +44,8 @@ namespace OutBack
             labelSkippedCast.Text = $"Skipped Cast: {skipForCast} items.";
             labelSkippedPermissions.Text = $"Skipped Perms: {skipForPermission} items.";
             labelSkippedDate.Text = $"Skipped Date: {skipForDate} items.";
+            labelSkippedExisting.Text = $"Skipped Existing: {skipForExisting} items.";
+            labelReplacedExisting.Text = $"Replaced Existing: {replacedExisting} items.";
             labelRetries.Text = $"Retries: {retryCount}";
             if (!string.IsNullOrEmpty(lastError))
             {

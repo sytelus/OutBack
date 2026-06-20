@@ -9,6 +9,8 @@ namespace OutBack
         private System.Windows.Forms.Button btnCancel;
         private System.Windows.Forms.Label lblMonthsOld;
         private System.Windows.Forms.TextBox txtMonthsOld;
+        private System.Windows.Forms.Label lblSourceFolders;
+        private System.Windows.Forms.CheckedListBox checkedListFolders;
 
         private void InitializeComponent()
         {
@@ -21,6 +23,8 @@ namespace OutBack
             this.labelSourceFolder = new System.Windows.Forms.Label();
             this.lblMonthsOld = new System.Windows.Forms.Label();
             this.txtMonthsOld = new System.Windows.Forms.TextBox();
+            this.lblSourceFolders = new System.Windows.Forms.Label();
+            this.checkedListFolders = new System.Windows.Forms.CheckedListBox();
             this.SuspendLayout();
             // 
             // lblPstFile
@@ -55,7 +59,7 @@ namespace OutBack
             // 
             // btnOK
             // 
-            this.btnOK.Location = new System.Drawing.Point(306, 169);
+            this.btnOK.Location = new System.Drawing.Point(306, 437);
             this.btnOK.Name = "btnOK";
             this.btnOK.Size = new System.Drawing.Size(98, 39);
             this.btnOK.TabIndex = 4;
@@ -65,7 +69,7 @@ namespace OutBack
             // 
             // btnCancel
             // 
-            this.btnCancel.Location = new System.Drawing.Point(410, 169);
+            this.btnCancel.Location = new System.Drawing.Point(410, 437);
             this.btnCancel.Name = "btnCancel";
             this.btnCancel.Size = new System.Drawing.Size(100, 39);
             this.btnCancel.TabIndex = 5;
@@ -107,10 +111,32 @@ namespace OutBack
             this.txtMonthsOld.Size = new System.Drawing.Size(100, 26);
             this.txtMonthsOld.TabIndex = 9;
             this.txtMonthsOld.Text = "0";
-            // 
+            //
+            // lblSourceFolders
+            //
+            this.lblSourceFolders.AutoSize = true;
+            this.lblSourceFolders.Location = new System.Drawing.Point(12, 153);
+            this.lblSourceFolders.Name = "lblSourceFolders";
+            this.lblSourceFolders.Size = new System.Drawing.Size(121, 20);
+            this.lblSourceFolders.TabIndex = 10;
+            this.lblSourceFolders.Text = "Source folders:";
+            //
+            // checkedListFolders
+            //
+            this.checkedListFolders.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.checkedListFolders.CheckOnClick = true;
+            this.checkedListFolders.FormattingEnabled = true;
+            this.checkedListFolders.Location = new System.Drawing.Point(16, 178);
+            this.checkedListFolders.Name = "checkedListFolders";
+            this.checkedListFolders.Size = new System.Drawing.Size(494, 235);
+            this.checkedListFolders.TabIndex = 11;
+            //
             // PSTSelectionForm
             // 
-            this.ClientSize = new System.Drawing.Size(522, 220);
+            this.ClientSize = new System.Drawing.Size(522, 490);
+            this.Controls.Add(this.checkedListFolders);
+            this.Controls.Add(this.lblSourceFolders);
             this.Controls.Add(this.txtMonthsOld);
             this.Controls.Add(this.lblMonthsOld);
             this.Controls.Add(this.labelSourceFolder);

@@ -24,6 +24,8 @@ namespace OutBack
             this.labelSkippedCast = new System.Windows.Forms.Label();
             this.labelSkippedPermissions = new System.Windows.Forms.Label();
             this.labelSkippedDate = new System.Windows.Forms.Label();
+            this.labelSkippedExisting = new System.Windows.Forms.Label();
+            this.labelReplacedExisting = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
             // progressBar
@@ -165,10 +167,30 @@ namespace OutBack
             this.labelSkippedDate.Size = new System.Drawing.Size(169, 20);
             this.labelSkippedDate.TabIndex = 13;
             this.labelSkippedDate.Text = "Skipped Date: 0 items.";
+            //
+            // labelSkippedExisting
+            //
+            this.labelSkippedExisting.AutoSize = true;
+            this.labelSkippedExisting.Location = new System.Drawing.Point(12, 241);
+            this.labelSkippedExisting.Name = "labelSkippedExisting";
+            this.labelSkippedExisting.Size = new System.Drawing.Size(194, 20);
+            this.labelSkippedExisting.TabIndex = 15;
+            this.labelSkippedExisting.Text = "Skipped Existing: 0 items.";
+            //
+            // labelReplacedExisting
+            //
+            this.labelReplacedExisting.AutoSize = true;
+            this.labelReplacedExisting.Location = new System.Drawing.Point(278, 241);
+            this.labelReplacedExisting.Name = "labelReplacedExisting";
+            this.labelReplacedExisting.Size = new System.Drawing.Size(199, 20);
+            this.labelReplacedExisting.TabIndex = 16;
+            this.labelReplacedExisting.Text = "Replaced Existing: 0 items.";
             // 
             // ProgressForm
             // 
             this.ClientSize = new System.Drawing.Size(891, 802);
+            this.Controls.Add(this.labelReplacedExisting);
+            this.Controls.Add(this.labelSkippedExisting);
             this.Controls.Add(this.labelSkippedDate);
             this.Controls.Add(this.labelSkippedPermissions);
             this.Controls.Add(this.labelSkippedCast);
@@ -202,5 +224,7 @@ namespace OutBack
         private System.Windows.Forms.Label labelSkippedCast;
         private System.Windows.Forms.Label labelSkippedPermissions;
         private System.Windows.Forms.Label labelSkippedDate;
+        private System.Windows.Forms.Label labelSkippedExisting;
+        private System.Windows.Forms.Label labelReplacedExisting;
     }
 }
