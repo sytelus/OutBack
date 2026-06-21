@@ -2,11 +2,11 @@
 
 ## Overview
 
-The Outlook PST Mover Add-in allows you to move or copy all items from the currently selected folder to a specified PST file. It ensures all items, along with their metadata, are transferred accurately. The add-in is designed to handle exceptions gracefully, ensuring maximum items are processed even if some fail.
+The Outlook PST Mover Add-in allows you to move or copy items from selected folders and their subfolders to a specified PST file. It ensures all items, along with their metadata, are transferred accurately. The add-in is designed to handle exceptions gracefully, ensuring maximum items are processed even if some fail.
 
 ## Features
 
-- Move or copy items from selected top-level folders to a PST file.
+- Move or copy items from selected top-level folders and their subfolders to a PST file.
 - Automatically creates the destination folder structure in the PST file.
 - Skips source items when the destination already has an equally current copy; in move mode, skipped source items are left in place.
 - Skips mail items that require Information Rights Management permissions and reports that count separately.
@@ -59,7 +59,7 @@ The Outlook PST Mover Add-in allows you to move or copy all items from the curre
 
 4. **Configure Options**
 
-   - In the dialog that appears, select a PST file and choose the source folders to process.
+   - In the dialog that appears, select a PST file and choose the source folders to process. Subfolders are included automatically.
    - Check the **Move Items** checkbox if you wish to move items. Leave it unchecked to copy items.
    - Click **Start** to begin the operation.
 

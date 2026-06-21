@@ -22,6 +22,26 @@ namespace OutBack
             public DateTime LastModificationTime { get; set; }
         }
 
+        private sealed class MoveRunState
+        {
+            public int TotalItems;
+            public int ProcessedItems;
+            public int SkippedItems;
+            public int SkipForCast;
+            public int SkipForPermission;
+            public int SkipForInformationRights;
+            public int SkipForDate;
+            public int SkipForExisting;
+            public int ReplacedExisting;
+            public int ErrorItems;
+            public int Retries = 1;
+            public bool IsCancelled;
+            public string LastError = "";
+            public DateTime CutoffDate;
+            public Stopwatch Stopwatch;
+            public ProgressForm ProgressForm;
+        }
+
         public ItemMover()
         {
             string logDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".OutBack");
@@ -74,128 +94,42 @@ namespace OutBack
                     throw new Exception($"Store '{storeName}' not found");
                 }
 
-                int totalItems = CountItems(sourceFolders);
-                int processedItems = 0;
-                int skippedItems = 0;
-                int skipForCast = 0;
-                int skipForPermission = 0;
-                int skipForInformationRights = 0;
-                int skipForDate = 0;
-                int skipForExisting = 0;
-                int replacedExisting = 0;
-                int errorItems = 0;
-                int retries = 1;
+                MoveRunState run = new MoveRunState
+                {
+                    TotalItems = CountItems(sourceFolders),
+                    CutoffDate = DateTime.Now.AddMonths(-(int)Math.Floor(monthsOld))
+                };
 
                 using (ProgressForm progressForm = new ProgressForm(
                     $"{sourceFolders.Count} source folder(s)",
                     pstStore.DisplayName))
                 {
+                    run.ProgressForm = progressForm;
                     progressForm.Show();
-                    Stopwatch stopwatch = Stopwatch.StartNew();
-                    bool isCancelled = false;
-                    string lastError = "";
+                    run.Stopwatch = Stopwatch.StartNew();
 
-                    DateTime cutoffDate = DateTime.Now.AddMonths(-(int)Math.Floor(monthsOld));
-
-                    Log($"Retry {retries}: Total items count = {totalItems}");
+                    Log($"Retry {run.Retries}: Total items count = {run.TotalItems}");
 
                     foreach (Outlook.MAPIFolder sourceFolder in sourceFolders)
                     {
-                        if (isCancelled) break;
+                        if (run.IsCancelled) break;
 
-                        Outlook.MAPIFolder destFolder = null;
-                        Outlook.Items sourceItems = null;
-                        Dictionary<string, List<ExistingItemInfo>> existingDestItems = null;
-
-                        try
-                        {
-                            destFolder = GetOrCreateFolder(pstStore, sourceFolder);
-                            existingDestItems = BuildExistingItemIndex(destFolder);
-                            sourceItems = sourceFolder.Items;
-                            progressForm.SetCurrentFolders(sourceFolder.FolderPath, destFolder.FolderPath);
-                            Log($"Processing folder: Source={sourceFolder.FolderPath}, Destination={destFolder.FolderPath}, Items={sourceItems.Count}");
-
-                            for (int i = sourceItems.Count; i >= 1; i--)
-                            {
-                                if (isCancelled) break;
-
-                                object item = null;
-                                processedItems++;
-
-                                try
-                                {
-                                    item = sourceItems[i];
-
-                                    bool isProcessed = ProcessItem(
-                                        item,
-                                        sourceFolder.DefaultItemType,
-                                        isMoveOperation,
-                                        monthsOld,
-                                        destFolder,
-                                        existingDestItems,
-                                        ref skippedItems,
-                                        ref skipForCast,
-                                        ref skipForPermission,
-                                        ref skipForInformationRights,
-                                        ref skipForDate,
-                                        ref skipForExisting,
-                                        ref replacedExisting,
-                                        cutoffDate);
-
-                                    if (!isProcessed)
-                                    {
-                                        skippedItems++;
-                                        skipForCast++;
-                                    }
-                                }
-                                catch (Exception ex)
-                                {
-                                    lastError = $"Error: {ex.GetType().Name}\nMessage: {ex.Message}\nStack Trace:\n{ex.StackTrace}";
-                                    errorItems++;
-                                    Log($"Error processing item {processedItems} in {sourceFolder.FolderPath}", ex);
-                                }
-                                finally
-                                {
-                                    if (item != null) Marshal.ReleaseComObject(item);
-
-                                    isCancelled = progressForm.UpdateProgress(
-                                        processedItems,
-                                        totalItems,
-                                        errorItems,
-                                        skippedItems,
-                                        skipForCast,
-                                        skipForPermission,
-                                        skipForInformationRights,
-                                        skipForDate,
-                                        skipForExisting,
-                                        replacedExisting,
-                                        lastError,
-                                        stopwatch.Elapsed,
-                                        retries);
-
-                                    if (processedItems % BATCH_SIZE == 0)
-                                    {
-                                        GC.Collect();
-                                        GC.WaitForPendingFinalizers();
-                                    }
-                                }
-                            }
-                        }
-                        finally
-                        {
-                            if (sourceItems != null) Marshal.ReleaseComObject(sourceItems);
-                            if (destFolder != null) Marshal.ReleaseComObject(destFolder);
-                        }
+                        ProcessFolderTree(
+                            pstStore,
+                            sourceFolder,
+                            isMoveOperation,
+                            monthsOld,
+                            run);
                     }
 
-                    stopwatch.Stop();
+                    run.Stopwatch.Stop();
                     progressForm.Close();
 
-                    string completionMessage = $"Operation completed: {processedItems}/{totalItems} processed, {errorItems} had errors, {skippedItems} skipped ({skipForExisting} existing, {skipForInformationRights} information rights), {replacedExisting} replaced";
+                    string completionMessage = $"Operation completed: {run.ProcessedItems}/{run.TotalItems} processed, {run.ErrorItems} had errors, {run.SkippedItems} skipped ({run.SkipForExisting} existing, {run.SkipForInformationRights} information rights), {run.ReplacedExisting} replaced";
                     Log(completionMessage);
-                    Log($"Total time: {stopwatch.Elapsed}");
+                    Log($"Total time: {run.Stopwatch.Elapsed}");
 
-                    MessageBox.Show($"{completionMessage}. Last error: '{lastError}'",
+                    MessageBox.Show($"{completionMessage}. Last error: '{run.LastError}'",
                         "Done", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
             }
@@ -225,22 +159,191 @@ namespace OutBack
             }
         }
 
+        private void ProcessFolderTree(Outlook.Store pstStore, Outlook.MAPIFolder sourceFolder, bool isMoveOperation, double monthsOld, MoveRunState run)
+        {
+            if (run.IsCancelled)
+                return;
+
+            ProcessFolderItems(
+                pstStore,
+                sourceFolder,
+                isMoveOperation,
+                monthsOld,
+                run);
+
+            if (run.IsCancelled)
+                return;
+
+            Outlook.Folders childFolders = null;
+
+            try
+            {
+                childFolders = sourceFolder.Folders;
+                int childCount = childFolders.Count;
+
+                for (int index = 1; index <= childCount; index++)
+                {
+                    if (run.IsCancelled)
+                        break;
+
+                    Outlook.MAPIFolder childFolder = null;
+
+                    try
+                    {
+                        childFolder = childFolders[index] as Outlook.MAPIFolder;
+                        if (childFolder == null)
+                            continue;
+
+                        ProcessFolderTree(
+                            pstStore,
+                            childFolder,
+                            isMoveOperation,
+                            monthsOld,
+                            run);
+                    }
+                    finally
+                    {
+                        if (childFolder != null) Marshal.ReleaseComObject(childFolder);
+                    }
+                }
+            }
+            finally
+            {
+                if (childFolders != null) Marshal.ReleaseComObject(childFolders);
+            }
+        }
+
+        private void ProcessFolderItems(Outlook.Store pstStore, Outlook.MAPIFolder sourceFolder, bool isMoveOperation, double monthsOld, MoveRunState run)
+        {
+            Outlook.MAPIFolder destFolder = null;
+            Outlook.Items sourceItems = null;
+            Dictionary<string, List<ExistingItemInfo>> existingDestItems = null;
+
+            try
+            {
+                destFolder = GetOrCreateFolder(pstStore, sourceFolder);
+                existingDestItems = BuildExistingItemIndex(destFolder);
+                sourceItems = sourceFolder.Items;
+                run.ProgressForm.SetCurrentFolders(sourceFolder.FolderPath, destFolder.FolderPath);
+                Log($"Processing folder: Source={sourceFolder.FolderPath}, Destination={destFolder.FolderPath}, Items={sourceItems.Count}");
+
+                for (int i = sourceItems.Count; i >= 1; i--)
+                {
+                    if (run.IsCancelled) break;
+
+                    object item = null;
+                    run.ProcessedItems++;
+
+                    try
+                    {
+                        item = sourceItems[i];
+
+                        bool isProcessed = ProcessItem(
+                            item,
+                            sourceFolder.DefaultItemType,
+                            isMoveOperation,
+                            monthsOld,
+                            destFolder,
+                            existingDestItems,
+                            ref run.SkippedItems,
+                            ref run.SkipForCast,
+                            ref run.SkipForPermission,
+                            ref run.SkipForInformationRights,
+                            ref run.SkipForDate,
+                            ref run.SkipForExisting,
+                            ref run.ReplacedExisting,
+                            run.CutoffDate);
+
+                        if (!isProcessed)
+                        {
+                            run.SkippedItems++;
+                            run.SkipForCast++;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        run.LastError = $"Error: {ex.GetType().Name}\nMessage: {ex.Message}\nStack Trace:\n{ex.StackTrace}";
+                        run.ErrorItems++;
+                        Log($"Error processing item {run.ProcessedItems} in {sourceFolder.FolderPath}", ex);
+                    }
+                    finally
+                    {
+                        if (item != null) Marshal.ReleaseComObject(item);
+
+                        run.IsCancelled = run.ProgressForm.UpdateProgress(
+                            run.ProcessedItems,
+                            run.TotalItems,
+                            run.ErrorItems,
+                            run.SkippedItems,
+                            run.SkipForCast,
+                            run.SkipForPermission,
+                            run.SkipForInformationRights,
+                            run.SkipForDate,
+                            run.SkipForExisting,
+                            run.ReplacedExisting,
+                            run.LastError,
+                            run.Stopwatch.Elapsed,
+                            run.Retries);
+
+                        if (run.ProcessedItems % BATCH_SIZE == 0)
+                        {
+                            GC.Collect();
+                            GC.WaitForPendingFinalizers();
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                if (sourceItems != null) Marshal.ReleaseComObject(sourceItems);
+                if (destFolder != null) Marshal.ReleaseComObject(destFolder);
+            }
+        }
+
         private int CountItems(IList<Outlook.MAPIFolder> sourceFolders)
         {
             int totalItems = 0;
 
             foreach (Outlook.MAPIFolder sourceFolder in sourceFolders)
+                totalItems += CountItems(sourceFolder);
+
+            return totalItems;
+        }
+
+        private int CountItems(Outlook.MAPIFolder sourceFolder)
+        {
+            int totalItems = 0;
+            Outlook.Items sourceItems = null;
+            Outlook.Folders childFolders = null;
+
+            try
             {
-                Outlook.Items sourceItems = null;
-                try
+                sourceItems = sourceFolder.Items;
+                totalItems += sourceItems.Count;
+
+                childFolders = sourceFolder.Folders;
+                int childCount = childFolders.Count;
+
+                for (int index = 1; index <= childCount; index++)
                 {
-                    sourceItems = sourceFolder.Items;
-                    totalItems += sourceItems.Count;
+                    Outlook.MAPIFolder childFolder = null;
+
+                    try
+                    {
+                        childFolder = childFolders[index] as Outlook.MAPIFolder;
+                        if (childFolder != null)
+                            totalItems += CountItems(childFolder);
+                    }
+                    finally
+                    {
+                        if (childFolder != null) Marshal.ReleaseComObject(childFolder);
+                    }
                 }
-                finally
-                {
-                    if (sourceItems != null) Marshal.ReleaseComObject(sourceItems);
-                }
+            }
+            finally
+            {
+                if (childFolders != null) Marshal.ReleaseComObject(childFolders);
+                if (sourceItems != null) Marshal.ReleaseComObject(sourceItems);
             }
 
             return totalItems;
