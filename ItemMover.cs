@@ -12,6 +12,7 @@ namespace OutBack
     public class ItemMover
     {
         private const int BATCH_SIZE = 20; // Process items in smaller batches
+        private const string MapiProptagPrefix = "http://schemas.microsoft.com/mapi/proptag/";
         private string logFilePath;
 
         private sealed class ExistingItemInfo
@@ -280,6 +281,16 @@ namespace OutBack
         private static bool ProcessItem(object item, Outlook.OlItemType sourceFolderItemType, bool isMoveOperation, double monthsOld, Outlook.MAPIFolder destFolder, Dictionary<string, List<ExistingItemInfo>> existingDestItems, ref int skippedItems, ref int skipForCast, ref int skipForPermission, ref int skipForInformationRights, ref int skipForDate, ref int skipForExisting, ref int replacedExisting, DateTime cutoffDate)
         {
             bool isProcessed = false;
+            bool checkedInformationRights = false;
+            Outlook.MailItem protectedMailItem = null;
+            if (sourceFolderItemType == Outlook.OlItemType.olMailItem &&
+                TryCastItem(item, out protectedMailItem))
+            {
+                checkedInformationRights = true;
+                if (ShouldSkipInformationRightsMail(protectedMailItem, ref skippedItems, ref skipForInformationRights))
+                    return true;
+            }
+
             string itemKey = GetItemIdentityKey(item);
             if (ShouldSkipExistingItem(item, itemKey, existingDestItems, ref skippedItems, ref skipForExisting))
                 return true;
@@ -297,7 +308,7 @@ namespace OutBack
                     return true;
             }
 
-            isProcessed = moveMailItem(item, isMoveOperation, monthsOld, destFolder, existingDestItems, itemKey, ref skippedItems, ref skipForCast, ref skipForPermission, ref skipForInformationRights, ref skipForDate, ref replacedExisting, cutoffDate);
+            isProcessed = moveMailItem(item, isMoveOperation, monthsOld, destFolder, existingDestItems, itemKey, checkedInformationRights, ref skippedItems, ref skipForCast, ref skipForPermission, ref skipForInformationRights, ref skipForDate, ref replacedExisting, cutoffDate);
             if (!isProcessed)
             {
                 isProcessed = moveCalItem(item, isMoveOperation, monthsOld, destFolder, existingDestItems, itemKey, ref skippedItems, ref skipForCast, ref skipForPermission, ref skipForDate, ref replacedExisting, cutoffDate);
@@ -778,7 +789,7 @@ namespace OutBack
             }
         }
 
-        private static bool moveMailItem(object item, bool isMoveOperation, double monthsOld, Outlook.MAPIFolder destFolder, Dictionary<string, List<ExistingItemInfo>> existingDestItems, string itemKey, ref int skippedItems, ref int skipForCast, ref int skipForPermission, ref int skipForInformationRights, ref int skipForDate, ref int replacedExisting, DateTime cutoffDate)
+        private static bool moveMailItem(object item, bool isMoveOperation, double monthsOld, Outlook.MAPIFolder destFolder, Dictionary<string, List<ExistingItemInfo>> existingDestItems, string itemKey, bool checkedInformationRights, ref int skippedItems, ref int skipForCast, ref int skipForPermission, ref int skipForInformationRights, ref int skipForDate, ref int replacedExisting, DateTime cutoffDate)
         {
             Outlook.MailItem mailItem = null;
             if (!TryCastItem(item, out mailItem))
@@ -791,20 +802,8 @@ namespace OutBack
 
             try
             {
-                Outlook.OlPermission permission = mailItem.Permission;
-                if (NeedsInformationRights(mailItem, permission))
-                {
-                    skippedItems++;
-                    skipForInformationRights++;
+                if (!checkedInformationRights && ShouldSkipInformationRightsMail(mailItem, ref skippedItems, ref skipForInformationRights))
                     return true;
-                }
-
-                if (permission != Outlook.OlPermission.olUnrestricted)
-                {
-                    skippedItems++;
-                    skipForPermission++;
-                    return true;
-                }
 
                 if (monthsOld > 0 && mailItem.ReceivedTime > cutoffDate)
                 {
@@ -826,6 +825,12 @@ namespace OutBack
                 FinishDestinationWrite(existingDestItems, itemKey, movedItem, destFolder, ref replacedExisting);
                 return true;
             }
+            catch (COMException ex) when (IsInformationRightsReadFailure(ex))
+            {
+                skippedItems++;
+                skipForInformationRights++;
+                return true;
+            }
             finally
             {
                 if (movedItem != null) Marshal.ReleaseComObject(movedItem);
@@ -834,10 +839,160 @@ namespace OutBack
 
         }
 
-        private static bool NeedsInformationRights(Outlook.MailItem mailItem, Outlook.OlPermission permission)
+        private static bool ShouldSkipInformationRightsMail(Outlook.MailItem mailItem, ref int skippedItems, ref int skipForInformationRights)
         {
-            return permission == Outlook.OlPermission.olPermissionTemplate ||
-                !string.IsNullOrEmpty(SafeGetString(() => mailItem.PermissionTemplateGuid));
+            if (!LooksInformationRightsProtected(mailItem))
+                return false;
+
+            skippedItems++;
+            skipForInformationRights++;
+            return true;
+        }
+
+        private static bool LooksInformationRightsProtected(Outlook.MailItem mailItem)
+        {
+            string messageClass = GetMailMapiString(mailItem, "0x001A001F", "0x001A001E");
+            if (IsProtectedMessageClass(messageClass))
+                return true;
+
+            bool? hasAttachments = GetMailMapiBoolean(mailItem, "0x0E1B000B");
+            if (hasAttachments == false)
+                return false;
+
+            return HasRightsProtectedMessageAttachment(mailItem);
+        }
+
+        private static bool IsProtectedMessageClass(string messageClass)
+        {
+            if (string.IsNullOrWhiteSpace(messageClass))
+                return false;
+
+            string normalized = messageClass.Trim().ToLowerInvariant();
+            return normalized.Contains("rpmsg") ||
+                normalized.Contains(".secure") ||
+                normalized.Contains(".smime");
+        }
+
+        private static bool HasRightsProtectedMessageAttachment(Outlook.MailItem mailItem)
+        {
+            Outlook.Attachments attachments = null;
+
+            try
+            {
+                attachments = mailItem.Attachments;
+                int count = attachments.Count;
+
+                for (int index = 1; index <= count; index++)
+                {
+                    Outlook.Attachment attachment = null;
+
+                    try
+                    {
+                        attachment = attachments[index];
+                        if (IsRightsProtectedAttachment(attachment))
+                            return true;
+                    }
+                    finally
+                    {
+                        if (attachment != null) Marshal.ReleaseComObject(attachment);
+                    }
+                }
+            }
+            catch
+            {
+                return false;
+            }
+            finally
+            {
+                if (attachments != null) Marshal.ReleaseComObject(attachments);
+            }
+
+            return false;
+        }
+
+        private static bool IsRightsProtectedAttachment(Outlook.Attachment attachment)
+        {
+            string fileName = SafeGetString(() => attachment.FileName);
+            string mimeTag = GetAttachmentMapiString(attachment, "0x370E001F", "0x370E001E");
+
+            return fileName.EndsWith(".rpmsg", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(mimeTag, "application/x-microsoft-rpmsg-message", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsInformationRightsReadFailure(COMException ex)
+        {
+            string message = ex.Message ?? string.Empty;
+            return message.IndexOf("Cannot read the item", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                message.IndexOf("information rights", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                message.IndexOf("rights management", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                message.IndexOf("protected", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private static string GetMailMapiString(Outlook.MailItem mailItem, params string[] proptags)
+        {
+            Outlook.PropertyAccessor propertyAccessor = null;
+
+            try
+            {
+                propertyAccessor = mailItem.PropertyAccessor;
+                return GetStringProperty(propertyAccessor, BuildMapiProptagSchemas(proptags));
+            }
+            catch
+            {
+                return string.Empty;
+            }
+            finally
+            {
+                if (propertyAccessor != null) Marshal.ReleaseComObject(propertyAccessor);
+            }
+        }
+
+        private static string GetAttachmentMapiString(Outlook.Attachment attachment, params string[] proptags)
+        {
+            Outlook.PropertyAccessor propertyAccessor = null;
+
+            try
+            {
+                propertyAccessor = attachment.PropertyAccessor;
+                return GetStringProperty(propertyAccessor, BuildMapiProptagSchemas(proptags));
+            }
+            catch
+            {
+                return string.Empty;
+            }
+            finally
+            {
+                if (propertyAccessor != null) Marshal.ReleaseComObject(propertyAccessor);
+            }
+        }
+
+        private static bool? GetMailMapiBoolean(Outlook.MailItem mailItem, string proptag)
+        {
+            Outlook.PropertyAccessor propertyAccessor = null;
+
+            try
+            {
+                propertyAccessor = mailItem.PropertyAccessor;
+                object value = propertyAccessor.GetProperty(MapiProptagPrefix + proptag);
+                return value is bool ? (bool)value : (bool?)null;
+            }
+            catch
+            {
+                return null;
+            }
+            finally
+            {
+                if (propertyAccessor != null) Marshal.ReleaseComObject(propertyAccessor);
+            }
+        }
+
+        private static string[] BuildMapiProptagSchemas(string[] proptags)
+        {
+            string[] schemas = new string[proptags.Length];
+            for (int index = 0; index < proptags.Length; index++)
+                schemas[index] = MapiProptagPrefix + proptags[index];
+
+            return schemas;
         }
 
         private static bool moveApptItem(object item, bool isMoveOperation, double monthsOld, Outlook.MAPIFolder destFolder, Dictionary<string, List<ExistingItemInfo>> existingDestItems, string itemKey, ref int skippedItems, ref int skipForCast, ref int skipForPermission, ref int skipForDate, ref int replacedExisting, DateTime cutoffDate)
