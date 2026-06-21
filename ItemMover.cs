@@ -381,12 +381,12 @@ namespace OutBack
             }
         }
 
-        private static bool ProcessItem(object item, Outlook.OlItemType sourceFolderItemType, bool isMoveOperation, double monthsOld, Outlook.MAPIFolder destFolder, Dictionary<string, List<ExistingItemInfo>> existingDestItems, ref int skippedItems, ref int skipForCast, ref int skipForPermission, ref int skipForInformationRights, ref int skipForDate, ref int skipForExisting, ref int replacedExisting, DateTime cutoffDate)
+        private bool ProcessItem(object item, Outlook.OlItemType sourceFolderItemType, bool isMoveOperation, double monthsOld, Outlook.MAPIFolder destFolder, Dictionary<string, List<ExistingItemInfo>> existingDestItems, ref int skippedItems, ref int skipForCast, ref int skipForPermission, ref int skipForInformationRights, ref int skipForDate, ref int skipForExisting, ref int replacedExisting, DateTime cutoffDate)
         {
-            bool isProcessed = false;
+            Outlook.OlObjectClass objectClass = GetObjectClass(item);
             bool checkedInformationRights = false;
             Outlook.MailItem protectedMailItem = null;
-            if (sourceFolderItemType == Outlook.OlItemType.olMailItem &&
+            if (objectClass == Outlook.OlObjectClass.olMail &&
                 TryCastItem(item, out protectedMailItem))
             {
                 checkedInformationRights = true;
@@ -394,38 +394,38 @@ namespace OutBack
                     return true;
             }
 
-            string itemKey = GetItemIdentityKey(item);
+            string itemKey = GetItemIdentityKey(item, objectClass);
             if (ShouldSkipExistingItem(item, itemKey, existingDestItems, ref skippedItems, ref skipForExisting))
                 return true;
 
-            if (sourceFolderItemType == Outlook.OlItemType.olContactItem)
+            if (objectClass == Outlook.OlObjectClass.olContact ||
+                objectClass == Outlook.OlObjectClass.olDistributionList)
             {
-                isProcessed = moveContactItem(item, isMoveOperation, monthsOld, destFolder, existingDestItems, itemKey, ref skippedItems, ref skipForCast, ref skipForPermission, ref skipForDate, ref replacedExisting, cutoffDate);
-                if (isProcessed)
-                    return true;
-            }
-            else if (sourceFolderItemType == Outlook.OlItemType.olAppointmentItem)
-            {
-                isProcessed = moveApptItem(item, isMoveOperation, monthsOld, destFolder, existingDestItems, itemKey, ref skippedItems, ref skipForCast, ref skipForPermission, ref skipForDate, ref replacedExisting, cutoffDate);
-                if (isProcessed)
-                    return true;
+                return moveContactItem(item, isMoveOperation, monthsOld, destFolder, existingDestItems, itemKey, ref skippedItems, ref skipForCast, ref skipForPermission, ref skipForDate, ref replacedExisting, cutoffDate);
             }
 
-            isProcessed = moveMailItem(item, isMoveOperation, monthsOld, destFolder, existingDestItems, itemKey, checkedInformationRights, ref skippedItems, ref skipForCast, ref skipForPermission, ref skipForInformationRights, ref skipForDate, ref replacedExisting, cutoffDate);
-            if (!isProcessed)
+            if (objectClass == Outlook.OlObjectClass.olAppointment)
             {
-                isProcessed = moveCalItem(item, isMoveOperation, monthsOld, destFolder, existingDestItems, itemKey, ref skippedItems, ref skipForCast, ref skipForPermission, ref skipForDate, ref replacedExisting, cutoffDate);
-            }
-            if (!isProcessed)
-            {
-                isProcessed = moveApptItem(item, isMoveOperation, monthsOld, destFolder, existingDestItems, itemKey, ref skippedItems, ref skipForCast, ref skipForPermission, ref skipForDate, ref replacedExisting, cutoffDate);
-            }
-            if (!isProcessed)
-            {
-                isProcessed = moveContactItem(item, isMoveOperation, monthsOld, destFolder, existingDestItems, itemKey, ref skippedItems, ref skipForCast, ref skipForPermission, ref skipForDate, ref replacedExisting, cutoffDate);
+                return moveApptItem(item, isMoveOperation, monthsOld, destFolder, existingDestItems, itemKey, ref skippedItems, ref skipForCast, ref skipForPermission, ref skipForDate, ref replacedExisting, cutoffDate);
             }
 
-            return isProcessed;
+            if (objectClass == Outlook.OlObjectClass.olMail)
+            {
+                return moveMailItem(item, isMoveOperation, monthsOld, destFolder, existingDestItems, itemKey, checkedInformationRights, ref skippedItems, ref skipForCast, ref skipForPermission, ref skipForInformationRights, ref skipForDate, ref replacedExisting, cutoffDate);
+            }
+
+            if (IsMeetingItemClass(objectClass))
+            {
+                return moveCalItem(item, isMoveOperation, monthsOld, destFolder, existingDestItems, itemKey, ref skippedItems, ref skipForCast, ref skipForPermission, ref skipForDate, ref replacedExisting, cutoffDate);
+            }
+
+            if (CanMoveGenericItemClass(objectClass))
+            {
+                return moveGenericItem(item, isMoveOperation, monthsOld, destFolder, existingDestItems, itemKey, ref skippedItems, ref skipForInformationRights, ref skipForDate, ref replacedExisting, cutoffDate);
+            }
+
+            Log($"Skipped unsupported item: Class={objectClass}, MessageClass={SafeGetDynamicString(item, "MessageClass")}, FolderType={sourceFolderItemType}.");
+            return false;
         }
 
         private static bool TryCastItem<T>(object item, out T typedItem) where T : class
@@ -449,6 +449,63 @@ namespace OutBack
                     return false;
 
                 throw;
+            }
+        }
+
+        // Mail folders can contain reports, posts, and other non-MailItem classes; route by Class before casting.
+        private static Outlook.OlObjectClass GetObjectClass(object item)
+        {
+            try
+            {
+                object classValue = ((dynamic)item).Class;
+                if (classValue is Outlook.OlObjectClass)
+                    return (Outlook.OlObjectClass)classValue;
+                if (classValue is int)
+                    return (Outlook.OlObjectClass)(int)classValue;
+            }
+            catch
+            {
+            }
+
+            return 0;
+        }
+
+        private static bool IsMeetingItemClass(Outlook.OlObjectClass objectClass)
+        {
+            switch (objectClass)
+            {
+                case Outlook.OlObjectClass.olMeetingCancellation:
+                case Outlook.OlObjectClass.olMeetingForwardNotification:
+                case Outlook.OlObjectClass.olMeetingRequest:
+                case Outlook.OlObjectClass.olMeetingResponseNegative:
+                case Outlook.OlObjectClass.olMeetingResponsePositive:
+                case Outlook.OlObjectClass.olMeetingResponseTentative:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        private static bool CanMoveGenericItemClass(Outlook.OlObjectClass objectClass)
+        {
+            switch (objectClass)
+            {
+                case Outlook.OlObjectClass.olCalendarSharing:
+                case Outlook.OlObjectClass.olDocument:
+                case Outlook.OlObjectClass.olJournal:
+                case Outlook.OlObjectClass.olNote:
+                case Outlook.OlObjectClass.olPost:
+                case Outlook.OlObjectClass.olRemote:
+                case Outlook.OlObjectClass.olReport:
+                case Outlook.OlObjectClass.olSharing:
+                case Outlook.OlObjectClass.olTask:
+                case Outlook.OlObjectClass.olTaskRequest:
+                case Outlook.OlObjectClass.olTaskRequestAccept:
+                case Outlook.OlObjectClass.olTaskRequestDecline:
+                case Outlook.OlObjectClass.olTaskRequestUpdate:
+                    return true;
+                default:
+                    return false;
             }
         }
 
@@ -561,8 +618,8 @@ namespace OutBack
                 try
                 {
                     existingItem = Globals.ThisAddIn.Application.Session.GetItemFromID(existingInfo.EntryId, existingInfo.StoreId);
-                    DeleteItem(existingItem);
-                    deletedItems++;
+                    if (DeleteItem(existingItem))
+                        deletedItems++;
                 }
                 finally
                 {
@@ -599,32 +656,43 @@ namespace OutBack
 
         private static string GetItemIdentityKey(object item)
         {
-            Outlook.MailItem mailItem = null;
-            if (TryCastItem(item, out mailItem))
-                return GetMailItemIdentityKey(mailItem);
+            return GetItemIdentityKey(item, GetObjectClass(item));
+        }
 
-            Outlook.MeetingItem meetingItem = null;
-            if (TryCastItem(item, out meetingItem))
-                return GetMeetingItemIdentityKey(meetingItem);
+        private static string GetItemIdentityKey(object item, Outlook.OlObjectClass objectClass)
+        {
+            switch (objectClass)
+            {
+                case Outlook.OlObjectClass.olMail:
+                    Outlook.MailItem mailItem = null;
+                    return TryCastItem(item, out mailItem) ? GetMailItemIdentityKey(mailItem) : GetGenericItemIdentityKey(item, "MAIL");
 
-            Outlook.AppointmentItem appointmentItem = null;
-            if (TryCastItem(item, out appointmentItem))
-                return GetAppointmentItemIdentityKey(appointmentItem);
+                case Outlook.OlObjectClass.olAppointment:
+                    Outlook.AppointmentItem appointmentItem = null;
+                    return TryCastItem(item, out appointmentItem) ? GetAppointmentItemIdentityKey(appointmentItem) : GetGenericItemIdentityKey(item, "APPOINTMENT");
 
-            Outlook.ContactItem contactItem = null;
-            if (TryCastItem(item, out contactItem))
-                return GetContactItemIdentityKey(contactItem);
+                case Outlook.OlObjectClass.olContact:
+                    Outlook.ContactItem contactItem = null;
+                    return TryCastItem(item, out contactItem) ? GetContactItemIdentityKey(contactItem) : GetGenericItemIdentityKey(item, "CONTACT");
 
-            Outlook.DistListItem distListItem = null;
-            if (TryCastItem(item, out distListItem))
-                return GetDistributionListIdentityKey(distListItem);
+                case Outlook.OlObjectClass.olDistributionList:
+                    Outlook.DistListItem distListItem = null;
+                    return TryCastItem(item, out distListItem) ? GetDistributionListIdentityKey(distListItem) : GetGenericItemIdentityKey(item, "DISTLIST");
 
-            return string.Empty;
+                default:
+                    if (IsMeetingItemClass(objectClass))
+                    {
+                        Outlook.MeetingItem meetingItem = null;
+                        return TryCastItem(item, out meetingItem) ? GetMeetingItemIdentityKey(meetingItem) : GetGenericItemIdentityKey(item, "MEETING");
+                    }
+
+                    return GetGenericItemIdentityKey(item, objectClass.ToString().ToUpperInvariant());
+            }
         }
 
         private static string GetMailItemIdentityKey(Outlook.MailItem mailItem)
         {
-            string internetMessageId = GetInternetMessageId(mailItem.PropertyAccessor);
+            string internetMessageId = GetInternetMessageId(SafeGetPropertyAccessor(() => mailItem.PropertyAccessor));
             if (!string.IsNullOrEmpty(internetMessageId))
                 return "MAIL:" + NormalizeForKey(internetMessageId);
 
@@ -640,7 +708,7 @@ namespace OutBack
 
         private static string GetMeetingItemIdentityKey(Outlook.MeetingItem meetingItem)
         {
-            string internetMessageId = GetInternetMessageId(meetingItem.PropertyAccessor);
+            string internetMessageId = GetInternetMessageId(SafeGetPropertyAccessor(() => meetingItem.PropertyAccessor));
             if (!string.IsNullOrEmpty(internetMessageId))
                 return "MEETING:" + NormalizeForKey(internetMessageId);
 
@@ -694,6 +762,35 @@ namespace OutBack
             return string.Empty;
         }
 
+        private static string GetGenericItemIdentityKey(object item, string prefix)
+        {
+            string internetMessageId = GetInternetMessageId(SafeGetPropertyAccessor(() => ((dynamic)item).PropertyAccessor));
+            if (!string.IsNullOrEmpty(internetMessageId))
+                return prefix + ":" + NormalizeForKey(internetMessageId);
+
+            return BuildIdentityKey(prefix + "-FALLBACK:", 3, new[]
+            {
+                NormalizeForKey(SafeGetDynamicString(item, "MessageClass")),
+                NormalizeForKey(SafeGetDynamicString(item, "Subject")),
+                DateForKey(SafeGetDynamicDateTime(item, "SentOn")),
+                DateForKey(SafeGetDynamicDateTime(item, "ReceivedTime")),
+                DateForKey(SafeGetDynamicDateTime(item, "CreationTime")),
+                IntForKey(SafeGetDynamicInt(item, "Size"))
+            });
+        }
+
+        private static Outlook.PropertyAccessor SafeGetPropertyAccessor(Func<Outlook.PropertyAccessor> getter)
+        {
+            try
+            {
+                return getter();
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
         private static string GetInternetMessageId(Outlook.PropertyAccessor propertyAccessor)
         {
             try
@@ -729,88 +826,24 @@ namespace OutBack
 
         private static DateTime GetItemLastModificationTime(object item)
         {
-            Outlook.MailItem mailItem = null;
-            if (TryCastItem(item, out mailItem))
-                return SafeGetDateTime(() => mailItem.LastModificationTime);
-
-            Outlook.MeetingItem meetingItem = null;
-            if (TryCastItem(item, out meetingItem))
-                return SafeGetDateTime(() => meetingItem.LastModificationTime);
-
-            Outlook.AppointmentItem appointmentItem = null;
-            if (TryCastItem(item, out appointmentItem))
-                return SafeGetDateTime(() => appointmentItem.LastModificationTime);
-
-            Outlook.ContactItem contactItem = null;
-            if (TryCastItem(item, out contactItem))
-                return SafeGetDateTime(() => contactItem.LastModificationTime);
-
-            Outlook.DistListItem distListItem = null;
-            if (TryCastItem(item, out distListItem))
-                return SafeGetDateTime(() => distListItem.LastModificationTime);
-
-            return DateTime.MinValue;
+            return SafeGetDynamicDateTime(item, "LastModificationTime");
         }
 
         private static string GetItemEntryId(object item)
         {
-            Outlook.MailItem mailItem = null;
-            if (TryCastItem(item, out mailItem))
-                return SafeGetString(() => mailItem.EntryID);
-
-            Outlook.MeetingItem meetingItem = null;
-            if (TryCastItem(item, out meetingItem))
-                return SafeGetString(() => meetingItem.EntryID);
-
-            Outlook.AppointmentItem appointmentItem = null;
-            if (TryCastItem(item, out appointmentItem))
-                return SafeGetString(() => appointmentItem.EntryID);
-
-            Outlook.ContactItem contactItem = null;
-            if (TryCastItem(item, out contactItem))
-                return SafeGetString(() => contactItem.EntryID);
-
-            Outlook.DistListItem distListItem = null;
-            if (TryCastItem(item, out distListItem))
-                return SafeGetString(() => distListItem.EntryID);
-
-            return string.Empty;
+            return SafeGetDynamicString(item, "EntryID");
         }
 
-        private static void DeleteItem(object item)
+        private static bool DeleteItem(object item)
         {
-            Outlook.MailItem mailItem = null;
-            if (TryCastItem(item, out mailItem))
+            try
             {
-                mailItem.Delete();
-                return;
+                ((dynamic)item).Delete();
+                return true;
             }
-
-            Outlook.MeetingItem meetingItem = null;
-            if (TryCastItem(item, out meetingItem))
+            catch
             {
-                meetingItem.Delete();
-                return;
-            }
-
-            Outlook.AppointmentItem appointmentItem = null;
-            if (TryCastItem(item, out appointmentItem))
-            {
-                appointmentItem.Delete();
-                return;
-            }
-
-            Outlook.ContactItem contactItem = null;
-            if (TryCastItem(item, out contactItem))
-            {
-                contactItem.Delete();
-                return;
-            }
-
-            Outlook.DistListItem distListItem = null;
-            if (TryCastItem(item, out distListItem))
-            {
-                distListItem.Delete();
+                return false;
             }
         }
 
@@ -889,6 +922,115 @@ namespace OutBack
             catch
             {
                 return 0;
+            }
+        }
+
+        private static string SafeGetDynamicString(object item, string propertyName)
+        {
+            object value = SafeGetDynamicValue(item, propertyName);
+            return value == null ? string.Empty : value.ToString();
+        }
+
+        private static DateTime SafeGetDynamicDateTime(object item, string propertyName)
+        {
+            object value = SafeGetDynamicValue(item, propertyName);
+            return value is DateTime ? (DateTime)value : DateTime.MinValue;
+        }
+
+        private static int SafeGetDynamicInt(object item, string propertyName)
+        {
+            object value = SafeGetDynamicValue(item, propertyName);
+            return value is int ? (int)value : 0;
+        }
+
+        private static object SafeGetDynamicValue(object item, string propertyName)
+        {
+            try
+            {
+                dynamic dynamicItem = item;
+                switch (propertyName)
+                {
+                    case "CreationTime":
+                        return dynamicItem.CreationTime;
+                    case "EntryID":
+                        return dynamicItem.EntryID;
+                    case "LastModificationTime":
+                        return dynamicItem.LastModificationTime;
+                    case "MessageClass":
+                        return dynamicItem.MessageClass;
+                    case "ReceivedTime":
+                        return dynamicItem.ReceivedTime;
+                    case "SentOn":
+                        return dynamicItem.SentOn;
+                    case "Size":
+                        return dynamicItem.Size;
+                    case "Subject":
+                        return dynamicItem.Subject;
+                    default:
+                        return null;
+                }
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static DateTime GetGenericDateForAgeFilter(object item)
+        {
+            DateTime value = SafeGetDynamicDateTime(item, "ReceivedTime");
+            if (value != DateTime.MinValue)
+                return value;
+
+            value = SafeGetDynamicDateTime(item, "SentOn");
+            if (value != DateTime.MinValue)
+                return value;
+
+            return SafeGetDynamicDateTime(item, "CreationTime");
+        }
+
+        private static bool moveGenericItem(object item, bool isMoveOperation, double monthsOld, Outlook.MAPIFolder destFolder, Dictionary<string, List<ExistingItemInfo>> existingDestItems, string itemKey, ref int skippedItems, ref int skipForInformationRights, ref int skipForDate, ref int replacedExisting, DateTime cutoffDate)
+        {
+            object movedItem = null;
+            object copiedItem = null;
+
+            try
+            {
+                DateTime itemDate = GetGenericDateForAgeFilter(item);
+                if (monthsOld > 0 && itemDate != DateTime.MinValue && itemDate > cutoffDate)
+                {
+                    skippedItems++;
+                    skipForDate++;
+                    return true;
+                }
+
+                if (isMoveOperation)
+                {
+                    movedItem = ((dynamic)item).Move(destFolder);
+                }
+                else
+                {
+                    copiedItem = ((dynamic)item).Copy();
+                    movedItem = ((dynamic)copiedItem).Move(destFolder);
+                }
+
+                FinishDestinationWrite(existingDestItems, itemKey, movedItem, destFolder, ref replacedExisting);
+                return true;
+            }
+            catch (COMException ex) when (IsInformationRightsReadFailure(ex))
+            {
+                skippedItems++;
+                skipForInformationRights++;
+                return true;
+            }
+            catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException)
+            {
+                return false;
+            }
+            finally
+            {
+                ReleaseComObjectIfNeeded(movedItem);
+                ReleaseComObjectIfNeeded(copiedItem);
             }
         }
 
