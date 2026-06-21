@@ -26,6 +26,7 @@ namespace OutBack
             this.labelSkippedDate = new System.Windows.Forms.Label();
             this.labelSkippedExisting = new System.Windows.Forms.Label();
             this.labelReplacedExisting = new System.Windows.Forms.Label();
+            this.labelSkippedInformationRights = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
             // progressBar
@@ -180,15 +181,25 @@ namespace OutBack
             // labelReplacedExisting
             //
             this.labelReplacedExisting.AutoSize = true;
-            this.labelReplacedExisting.Location = new System.Drawing.Point(278, 241);
+            this.labelReplacedExisting.Location = new System.Drawing.Point(530, 241);
             this.labelReplacedExisting.Name = "labelReplacedExisting";
             this.labelReplacedExisting.Size = new System.Drawing.Size(199, 20);
             this.labelReplacedExisting.TabIndex = 16;
             this.labelReplacedExisting.Text = "Replaced Existing: 0 items.";
+            //
+            // labelSkippedInformationRights
+            //
+            this.labelSkippedInformationRights.AutoSize = true;
+            this.labelSkippedInformationRights.Location = new System.Drawing.Point(278, 241);
+            this.labelSkippedInformationRights.Name = "labelSkippedInformationRights";
+            this.labelSkippedInformationRights.Size = new System.Drawing.Size(224, 20);
+            this.labelSkippedInformationRights.TabIndex = 17;
+            this.labelSkippedInformationRights.Text = "Skipped Info Rights: 0 items.";
             // 
             // ProgressForm
             // 
             this.ClientSize = new System.Drawing.Size(891, 802);
+            this.Controls.Add(this.labelSkippedInformationRights);
             this.Controls.Add(this.labelReplacedExisting);
             this.Controls.Add(this.labelSkippedExisting);
             this.Controls.Add(this.labelSkippedDate);
@@ -226,5 +237,6 @@ namespace OutBack
         private System.Windows.Forms.Label labelSkippedDate;
         private System.Windows.Forms.Label labelSkippedExisting;
         private System.Windows.Forms.Label labelReplacedExisting;
+        private System.Windows.Forms.Label labelSkippedInformationRights;
     }
 }

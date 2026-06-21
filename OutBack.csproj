@@ -213,6 +213,7 @@
   -->
   <ItemGroup>
     <Compile Include="CalendarExporter.cs" />
+    <Compile Include="ContactExporter.cs" />
     <Compile Include="CalendarExportForm.cs">
       <SubType>Form</SubType>
     </Compile>

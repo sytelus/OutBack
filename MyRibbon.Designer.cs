@@ -38,6 +38,7 @@
             this.group1 = this.Factory.CreateRibbonGroup();
             this.btnMoveCopy = this.Factory.CreateRibbonButton();
             this.btnExportCalendar = this.Factory.CreateRibbonButton();
+            this.btnExportContacts = this.Factory.CreateRibbonButton();
             this.tab1.SuspendLayout();
             this.group1.SuspendLayout();
             this.SuspendLayout();
@@ -53,6 +54,7 @@
             // 
             this.group1.Items.Add(this.btnMoveCopy);
             this.group1.Items.Add(this.btnExportCalendar);
+            this.group1.Items.Add(this.btnExportContacts);
             this.group1.Label = "OutBack";
             this.group1.Name = "group1";
             // 
@@ -67,6 +69,12 @@
             this.btnExportCalendar.Label = "Export Calendar";
             this.btnExportCalendar.Name = "btnExportCalendar";
             this.btnExportCalendar.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.btnExportCalendar_Click);
+            //
+            // btnExportContacts
+            //
+            this.btnExportContacts.Label = "Export Contacts";
+            this.btnExportContacts.Name = "btnExportContacts";
+            this.btnExportContacts.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.btnExportContacts_Click);
             //
             // MyRibbon
             // 
@@ -88,6 +96,7 @@
         internal Microsoft.Office.Tools.Ribbon.RibbonGroup group1;
         internal Microsoft.Office.Tools.Ribbon.RibbonButton btnMoveCopy;
         internal Microsoft.Office.Tools.Ribbon.RibbonButton btnExportCalendar;
+        internal Microsoft.Office.Tools.Ribbon.RibbonButton btnExportContacts;
     }
 
     partial class ThisRibbonCollection

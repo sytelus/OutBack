@@ -78,6 +78,7 @@ namespace OutBack
                 int skippedItems = 0;
                 int skipForCast = 0;
                 int skipForPermission = 0;
+                int skipForInformationRights = 0;
                 int skipForDate = 0;
                 int skipForExisting = 0;
                 int replacedExisting = 0;
@@ -134,6 +135,7 @@ namespace OutBack
                                         ref skippedItems,
                                         ref skipForCast,
                                         ref skipForPermission,
+                                        ref skipForInformationRights,
                                         ref skipForDate,
                                         ref skipForExisting,
                                         ref replacedExisting,
@@ -162,6 +164,7 @@ namespace OutBack
                                         skippedItems,
                                         skipForCast,
                                         skipForPermission,
+                                        skipForInformationRights,
                                         skipForDate,
                                         skipForExisting,
                                         replacedExisting,
@@ -187,7 +190,7 @@ namespace OutBack
                     stopwatch.Stop();
                     progressForm.Close();
 
-                    string completionMessage = $"Operation completed: {processedItems}/{totalItems} processed, {errorItems} had errors, {skippedItems} skipped ({skipForExisting} existing), {replacedExisting} replaced";
+                    string completionMessage = $"Operation completed: {processedItems}/{totalItems} processed, {errorItems} had errors, {skippedItems} skipped ({skipForExisting} existing, {skipForInformationRights} information rights), {replacedExisting} replaced";
                     Log(completionMessage);
                     Log($"Total time: {stopwatch.Elapsed}");
 
@@ -274,7 +277,7 @@ namespace OutBack
             }
         }
 
-        private static bool ProcessItem(object item, Outlook.OlItemType sourceFolderItemType, bool isMoveOperation, double monthsOld, Outlook.MAPIFolder destFolder, Dictionary<string, List<ExistingItemInfo>> existingDestItems, ref int skippedItems, ref int skipForCast, ref int skipForPermission, ref int skipForDate, ref int skipForExisting, ref int replacedExisting, DateTime cutoffDate)
+        private static bool ProcessItem(object item, Outlook.OlItemType sourceFolderItemType, bool isMoveOperation, double monthsOld, Outlook.MAPIFolder destFolder, Dictionary<string, List<ExistingItemInfo>> existingDestItems, ref int skippedItems, ref int skipForCast, ref int skipForPermission, ref int skipForInformationRights, ref int skipForDate, ref int skipForExisting, ref int replacedExisting, DateTime cutoffDate)
         {
             bool isProcessed = false;
             string itemKey = GetItemIdentityKey(item);
@@ -294,7 +297,7 @@ namespace OutBack
                     return true;
             }
 
-            isProcessed = moveMailItem(item, isMoveOperation, monthsOld, destFolder, existingDestItems, itemKey, ref skippedItems, ref skipForCast, ref skipForPermission, ref skipForDate, ref replacedExisting, cutoffDate);
+            isProcessed = moveMailItem(item, isMoveOperation, monthsOld, destFolder, existingDestItems, itemKey, ref skippedItems, ref skipForCast, ref skipForPermission, ref skipForInformationRights, ref skipForDate, ref replacedExisting, cutoffDate);
             if (!isProcessed)
             {
                 isProcessed = moveCalItem(item, isMoveOperation, monthsOld, destFolder, existingDestItems, itemKey, ref skippedItems, ref skipForCast, ref skipForPermission, ref skipForDate, ref replacedExisting, cutoffDate);
@@ -775,7 +778,7 @@ namespace OutBack
             }
         }
 
-        private static bool moveMailItem(object item, bool isMoveOperation, double monthsOld, Outlook.MAPIFolder destFolder, Dictionary<string, List<ExistingItemInfo>> existingDestItems, string itemKey, ref int skippedItems, ref int skipForCast, ref int skipForPermission, ref int skipForDate, ref int replacedExisting, DateTime cutoffDate)
+        private static bool moveMailItem(object item, bool isMoveOperation, double monthsOld, Outlook.MAPIFolder destFolder, Dictionary<string, List<ExistingItemInfo>> existingDestItems, string itemKey, ref int skippedItems, ref int skipForCast, ref int skipForPermission, ref int skipForInformationRights, ref int skipForDate, ref int replacedExisting, DateTime cutoffDate)
         {
             Outlook.MailItem mailItem = null;
             if (!TryCastItem(item, out mailItem))
@@ -788,7 +791,15 @@ namespace OutBack
 
             try
             {
-                if (mailItem.Permission != Outlook.OlPermission.olUnrestricted)
+                Outlook.OlPermission permission = mailItem.Permission;
+                if (NeedsInformationRights(mailItem, permission))
+                {
+                    skippedItems++;
+                    skipForInformationRights++;
+                    return true;
+                }
+
+                if (permission != Outlook.OlPermission.olUnrestricted)
                 {
                     skippedItems++;
                     skipForPermission++;
@@ -822,6 +833,13 @@ namespace OutBack
             }
 
         }
+
+        private static bool NeedsInformationRights(Outlook.MailItem mailItem, Outlook.OlPermission permission)
+        {
+            return permission == Outlook.OlPermission.olPermissionTemplate ||
+                !string.IsNullOrEmpty(SafeGetString(() => mailItem.PermissionTemplateGuid));
+        }
+
         private static bool moveApptItem(object item, bool isMoveOperation, double monthsOld, Outlook.MAPIFolder destFolder, Dictionary<string, List<ExistingItemInfo>> existingDestItems, string itemKey, ref int skippedItems, ref int skipForCast, ref int skipForPermission, ref int skipForDate, ref int replacedExisting, DateTime cutoffDate)
         {
             Outlook.AppointmentItem mailItem = null;

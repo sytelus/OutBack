@@ -23,7 +23,7 @@ namespace OutBack
         }
 
         public bool UpdateProgress(int processedItems, int totalItems, int errorItems, int skippedItems,
-            int skipForCast, int skipForPermission, int skipForDate, int skipForExisting, int replacedExisting,
+            int skipForCast, int skipForPermission, int skipForInformationRights, int skipForDate, int skipForExisting, int replacedExisting,
             string lastError, TimeSpan elapsedTime, int retryCount)
         {
             int progressValue = totalItems <= 0 ? 100 : Math.Min((int)((double)processedItems / totalItems * 100), 100);
@@ -43,6 +43,7 @@ namespace OutBack
             labelSkippedItems.Text = $"Skipped Total: {skippedItems} items.";
             labelSkippedCast.Text = $"Skipped Cast: {skipForCast} items.";
             labelSkippedPermissions.Text = $"Skipped Perms: {skipForPermission} items.";
+            labelSkippedInformationRights.Text = $"Skipped Info Rights: {skipForInformationRights} items.";
             labelSkippedDate.Text = $"Skipped Date: {skipForDate} items.";
             labelSkippedExisting.Text = $"Skipped Existing: {skipForExisting} items.";
             labelReplacedExisting.Text = $"Replaced Existing: {replacedExisting} items.";

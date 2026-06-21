@@ -9,8 +9,10 @@ The Outlook PST Mover Add-in allows you to move or copy all items from the curre
 - Move or copy items from selected top-level folders to a PST file.
 - Automatically creates the destination folder structure in the PST file.
 - Skips source items when the destination already has an equally current copy; in move mode, skipped source items are left in place.
+- Skips mail items that require Information Rights Management permissions and reports that count separately.
 - Replaces older destination copies only after the source item has been written successfully, preventing duplicate copies without risking the existing destination item.
 - Exports Calendar items to an iCalendar (`.ics`) file with category, appointment/meeting, and organizer filters.
+- Exports Contacts items to a vCard (`.vcf`) file that can be imported into Google Contacts.
 - Handles items that cannot be moved or copied by skipping them.
 - Ensures all items are fully downloaded before processing.
 - Displays a progress bar with statistics:
@@ -44,7 +46,7 @@ The Outlook PST Mover Add-in allows you to move or copy all items from the curre
 
 1. **Launch Outlook**
 
-   Open Microsoft Outlook. You should see a new tab called **PST Mover** in the ribbon.
+   Open Microsoft Outlook. You should see a new tab called **OutBack** in the ribbon.
 
 2. **Select a Folder**
 
@@ -52,8 +54,8 @@ The Outlook PST Mover Add-in allows you to move or copy all items from the curre
 
 3. **Start the Operation**
 
-   - Click on the **PST Mover** tab.
-   - Click the **Move/Copy to PST** button.
+   - Click on the **OutBack** tab.
+   - Click the **Move/Copy** button.
 
 4. **Configure Options**
 
@@ -65,6 +67,12 @@ The Outlook PST Mover Add-in allows you to move or copy all items from the curre
 
    - A progress window will display the number of items processed, time elapsed, and estimated time remaining.
    - Upon completion, a success message will appear.
+
+6. **Export Contacts for Google Contacts**
+
+   - Select a Contacts folder, or let the add-in use your default Contacts folder.
+   - Click **Export Contacts**.
+   - Save the `.vcf` file and import it from Google Contacts.
 
 ## How to Debug
 
@@ -89,7 +97,7 @@ This is a VSTO (Visual Studio Tools for Office) Outlook Add-in. Debugging requir
 
 | File | Where to Break | Why |
 |------|----------------|-----|
-| `MyRibbon.cs` | Button click handler | Entry point when the user clicks **Move/Copy to PST** |
+| `MyRibbon.cs` | Button click handler | Entry point when the user clicks a ribbon command |
 | `PSTSelectionForm.cs` | Form load / Start button | Inspect user-selected options before the operation begins |
 | `ItemMover.cs` | Move/copy loop | Step through individual item processing |
 | `ProgressForm.cs` | Progress update calls | Verify progress tracking and ETA calculations |

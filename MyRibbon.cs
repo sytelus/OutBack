@@ -89,6 +89,38 @@ namespace OutBack
             }
         }
 
+        private void btnExportContacts_Click(object sender, RibbonControlEventArgs e)
+        {
+            Outlook.MAPIFolder contactFolder = null;
+
+            try
+            {
+                contactFolder = GetContactFolderForExport();
+                string exportFilePath = PromptForContactExportPath(contactFolder.Name);
+                if (string.IsNullOrEmpty(exportFilePath))
+                    return;
+
+                ContactExporter exporter = new ContactExporter();
+                ContactExportResult result = exporter.Export(contactFolder, exportFilePath);
+                string status = result.Cancelled ? "cancelled" : "completed";
+
+                MessageBox.Show(
+                    $"Contact export {status}.\nExported: {result.ExportedItems}\nSkipped: {result.SkippedItems}\nErrors: {result.ErrorItems}\nFile: {result.FilePath}",
+                    "Export Contacts",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Unable to export contacts:\n{ex.Message}", "Export Contacts", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                if (contactFolder != null)
+                    Marshal.ReleaseComObject(contactFolder);
+            }
+        }
+
         private Outlook.MAPIFolder GetCalendarFolderForExport()
         {
             Outlook.Explorer explorer = null;
@@ -117,6 +149,62 @@ namespace OutBack
                 if (explorer != null)
                     Marshal.ReleaseComObject(explorer);
             }
+        }
+
+        private Outlook.MAPIFolder GetContactFolderForExport()
+        {
+            Outlook.Explorer explorer = null;
+            Outlook.MAPIFolder currentFolder = null;
+
+            try
+            {
+                explorer = Globals.ThisAddIn.Application.ActiveExplorer();
+                if (explorer != null)
+                {
+                    currentFolder = explorer.CurrentFolder;
+                    if (currentFolder != null && currentFolder.DefaultItemType == Outlook.OlItemType.olContactItem)
+                        return currentFolder;
+
+                    if (currentFolder != null)
+                    {
+                        Marshal.ReleaseComObject(currentFolder);
+                        currentFolder = null;
+                    }
+                }
+
+                return Globals.ThisAddIn.Application.Session.GetDefaultFolder(Outlook.OlDefaultFolders.olFolderContacts);
+            }
+            finally
+            {
+                if (explorer != null)
+                    Marshal.ReleaseComObject(explorer);
+            }
+        }
+
+        private static string PromptForContactExportPath(string folderName)
+        {
+            using (SaveFileDialog dialog = new SaveFileDialog())
+            {
+                dialog.Filter = "vCard files (*.vcf)|*.vcf|All files (*.*)|*.*";
+                dialog.DefaultExt = "vcf";
+                dialog.AddExtension = true;
+                dialog.OverwritePrompt = true;
+                dialog.FileName = GetDefaultContactExportFileName(folderName);
+                dialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+
+                return dialog.ShowDialog() == DialogResult.OK ? dialog.FileName : string.Empty;
+            }
+        }
+
+        private static string GetDefaultContactExportFileName(string folderName)
+        {
+            string safeFolderName = folderName;
+            foreach (char invalidChar in System.IO.Path.GetInvalidFileNameChars())
+            {
+                safeFolderName = safeFolderName.Replace(invalidChar, '_');
+            }
+
+            return $"{safeFolderName}_{DateTime.Now:yyyyMMdd_HHmmss}.vcf";
         }
     }
 }
