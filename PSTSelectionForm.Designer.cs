@@ -56,8 +56,6 @@ namespace OutBack
             // chkMoveItems
             // 
             this.chkMoveItems.AutoSize = true;
-            this.chkMoveItems.Checked = true;
-            this.chkMoveItems.CheckState = System.Windows.Forms.CheckState.Checked;
             this.chkMoveItems.Location = new System.Drawing.Point(68, 48);
             this.chkMoveItems.Name = "chkMoveItems";
             this.chkMoveItems.Size = new System.Drawing.Size(117, 24);

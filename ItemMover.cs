@@ -964,6 +964,8 @@ namespace OutBack
                         return dynamicItem.SentOn;
                     case "Size":
                         return dynamicItem.Size;
+                    case "StoreID":
+                        return dynamicItem.StoreID;
                     case "Subject":
                         return dynamicItem.Subject;
                     default:
@@ -987,6 +989,25 @@ namespace OutBack
                 return value;
 
             return SafeGetDynamicDateTime(item, "CreationTime");
+        }
+
+        private static string GetItemStoreId(object item)
+        {
+            object parent = null;
+
+            try
+            {
+                parent = ((dynamic)item).Parent;
+                return SafeGetDynamicString(parent, "StoreID");
+            }
+            catch
+            {
+                return string.Empty;
+            }
+            finally
+            {
+                ReleaseComObjectIfNeeded(parent);
+            }
         }
 
         private static bool moveGenericItem(object item, bool isMoveOperation, double monthsOld, Outlook.MAPIFolder destFolder, Dictionary<string, List<ExistingItemInfo>> existingDestItems, string itemKey, ref int skippedItems, ref int skipForInformationRights, ref int skipForDate, ref int replacedExisting, DateTime cutoffDate)
@@ -1173,6 +1194,12 @@ namespace OutBack
                 message.IndexOf("protected", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
+        private static bool IsMessageChangedFailure(COMException ex)
+        {
+            string message = ex.Message ?? string.Empty;
+            return message.IndexOf("message has been changed", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
         private static string GetMailMapiString(Outlook.MailItem mailItem, params string[] proptags)
         {
             Outlook.PropertyAccessor propertyAccessor = null;
@@ -1248,8 +1275,7 @@ namespace OutBack
                 return false;
             }
 
-            Outlook.AppointmentItem movedItem = null;
-            Outlook.AppointmentItem copiedItem = null;
+            object movedItem = null;
 
             try
             {
@@ -1259,8 +1285,7 @@ namespace OutBack
                 }
                 else
                 {
-                    copiedItem = mailItem.Copy();
-                    movedItem = copiedItem.Move(destFolder);
+                    movedItem = CopyAppointmentToFolder(mailItem, destFolder);
                 }
 
                 FinishDestinationWrite(existingDestItems, itemKey, movedItem, destFolder, ref replacedExisting);
@@ -1268,8 +1293,47 @@ namespace OutBack
             }
             finally
             {
-                if (movedItem != null) Marshal.ReleaseComObject(movedItem);
-                if (copiedItem != null) Marshal.ReleaseComObject(copiedItem);
+                ReleaseComObjectIfNeeded(movedItem);
+            }
+        }
+
+        private static object CopyAppointmentToFolder(Outlook.AppointmentItem appointment, Outlook.MAPIFolder destFolder)
+        {
+            try
+            {
+                return appointment.CopyTo(destFolder, Outlook.OlAppointmentCopyOptions.olCreateAppointment);
+            }
+            catch (COMException ex) when (IsMessageChangedFailure(ex))
+            {
+                return CopyFreshAppointmentToFolder(appointment, destFolder);
+            }
+        }
+
+        private static object CopyFreshAppointmentToFolder(Outlook.AppointmentItem appointment, Outlook.MAPIFolder destFolder)
+        {
+            object freshItem = null;
+
+            try
+            {
+                string entryId = SafeGetString(() => appointment.EntryID);
+                if (string.IsNullOrEmpty(entryId))
+                    throw new COMException("Cannot refresh appointment item because EntryID is empty.");
+
+                string storeId = GetItemStoreId(appointment);
+                freshItem = string.IsNullOrEmpty(storeId) ?
+                    Globals.ThisAddIn.Application.Session.GetItemFromID(entryId) :
+                    Globals.ThisAddIn.Application.Session.GetItemFromID(entryId, storeId);
+
+                Outlook.AppointmentItem freshAppointment = null;
+                if (!TryCastItem(freshItem, out freshAppointment))
+                    throw new InvalidCastException("Outlook returned a non-appointment item for the appointment EntryID.");
+
+                // CopyTo avoids the Copy+Move path that fails for some stale recurring appointment objects.
+                return freshAppointment.CopyTo(destFolder, Outlook.OlAppointmentCopyOptions.olCreateAppointment);
+            }
+            finally
+            {
+                ReleaseComObjectIfNeeded(freshItem);
             }
         }
 

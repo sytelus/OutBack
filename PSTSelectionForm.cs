@@ -107,7 +107,7 @@ namespace OutBack
                             folder.EntryID,
                             folder.StoreID);
 
-                        checkedListFolders.Items.Add(selection, IsCurrentFolderSelection(currentFolder.FolderPath, folder.FolderPath));
+                        checkedListFolders.Items.Add(selection, false);
                         SetFolderLoadProgress(index, totalFolders);
                     }
                     finally
@@ -130,15 +130,6 @@ namespace OutBack
                 if (explorer != null)
                     Marshal.ReleaseComObject(explorer);
             }
-        }
-
-        private static bool IsCurrentFolderSelection(string currentFolderPath, string topLevelFolderPath)
-        {
-            if (string.IsNullOrEmpty(currentFolderPath) || string.IsNullOrEmpty(topLevelFolderPath))
-                return false;
-
-            return string.Equals(currentFolderPath, topLevelFolderPath, StringComparison.OrdinalIgnoreCase) ||
-                currentFolderPath.StartsWith(topLevelFolderPath + "\\", StringComparison.OrdinalIgnoreCase);
         }
 
         private void btnOK_Click(object sender, EventArgs e)
