@@ -1063,8 +1063,8 @@ namespace OutBack
                 return false;
             }
 
-            Outlook.MailItem movedItem = null;
-            Outlook.MailItem copiedItem = null;
+            object movedItem = null;
+            object copiedItem = null;
 
             try
             {
@@ -1085,7 +1085,7 @@ namespace OutBack
                 else
                 {
                     copiedItem = mailItem.Copy();
-                    movedItem = copiedItem.Move(destFolder);
+                    movedItem = ((dynamic)copiedItem).Move(destFolder);
                 }
 
                 FinishDestinationWrite(existingDestItems, itemKey, movedItem, destFolder, ref replacedExisting);
@@ -1099,8 +1099,8 @@ namespace OutBack
             }
             finally
             {
-                if (movedItem != null) Marshal.ReleaseComObject(movedItem);
-                if (copiedItem != null) Marshal.ReleaseComObject(copiedItem);
+                ReleaseComObjectIfNeeded(movedItem);
+                ReleaseComObjectIfNeeded(copiedItem);
             }
 
         }
@@ -1346,8 +1346,8 @@ namespace OutBack
                 return false;
             }
 
-            Outlook.MeetingItem movedItem = null;
-            Outlook.MeetingItem copiedItem = null;
+            object movedItem = null;
+            object copiedItem = null;
 
             try
             {
@@ -1365,7 +1365,7 @@ namespace OutBack
                 else
                 {
                     copiedItem = mailItem.Copy();
-                    movedItem = copiedItem.Move(destFolder);
+                    movedItem = ((dynamic)copiedItem).Move(destFolder);
                 }
 
                 FinishDestinationWrite(existingDestItems, itemKey, movedItem, destFolder, ref replacedExisting);
@@ -1373,8 +1373,8 @@ namespace OutBack
             }
             finally
             {
-                if (movedItem != null) Marshal.ReleaseComObject(movedItem);
-                if (copiedItem != null) Marshal.ReleaseComObject(copiedItem);
+                ReleaseComObjectIfNeeded(movedItem);
+                ReleaseComObjectIfNeeded(copiedItem);
             }
         }
 
