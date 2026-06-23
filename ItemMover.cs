@@ -1501,14 +1501,9 @@ namespace OutBack
             {
                 rootFolder = store.GetRootFolder() as Outlook.Folder;
                 currentFolder = rootFolder;
-                var pathParts = new List<string>(folderPath.Split('\\'));
-
-                //reverse scan pathParts to remove any empty strings
-                for (int i = pathParts.Count - 1; i >= 0; i--)
-                {
-                    if (string.IsNullOrEmpty(pathParts[i]) || pathParts[i].Contains("@"))
-                        pathParts.RemoveAt(i);
-                }
+                var pathParts = new List<string>(folderPath.Split(new[] { '\\' }, StringSplitOptions.RemoveEmptyEntries));
+                if (pathParts.Count > 0)
+                    pathParts.RemoveAt(0);
 
                 foreach (string part in pathParts)
                 {
@@ -1518,6 +1513,9 @@ namespace OutBack
                         Marshal.ReleaseComObject(currentFolder);
                     currentFolder = subFolder;
                 }
+
+                if (currentFolder == rootFolder)
+                    rootFolder = null;
 
                 return currentFolder;
             }
